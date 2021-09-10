@@ -34,7 +34,7 @@ int main(int argc, char * argv[])
 	translate();
 	writeOutputFile("text/test.out", &writeBuffer, wbPointer);
 		
-	unsigned char* pattern;
+	unsigned char *pattern, *pattern1;
 	
 	struct rusage ruse, ruse1, ruse2;
 	double ssec1, ssec2, usec1, usec2;
@@ -67,10 +67,13 @@ BNDM:;
 	for (int i = 0; i < LOOPS; i++)
 	{
 		randomSelectPattern(&pattern, pattLen, readBuffer, fSize);
+		randomSelectPattern(&pattern1, pattLen, readBuffer, fSize);
 		printf("Pattern: %s\n", pattern);
+		printf("Pattern1: %s\n", pattern1);
 		aPointer = 0;
-		bndm_search(pattern, pattLen);
+		bndm_search(pattern, pattern1, pattLen);
 		free(pattern);
+		free(pattern1);
 	}
 
 	getrusage(RUSAGE_SELF, &ruse);

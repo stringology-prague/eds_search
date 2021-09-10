@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "functions.h"
 
-int bndm_search(unsigned char *x, unsigned int m) {
+int bndm_search(unsigned char *pattern0, unsigned char *pattern1, unsigned int m) {
 	unsigned int B[2][SIGMA];
 	unsigned int S[2][SIGMA];
     //Stores starting register values for change from BNDM to SA. Basically one-set-bit on different positions 0 to m-1.
@@ -22,8 +22,8 @@ int bndm_search(unsigned char *x, unsigned int m) {
 	
 	for (i = m - 1; i >= 0; i--) {
 		//printf("bndm_search: 3, i = %d\n", i);
-		B[0][x[i]] |= F;
-		B[1][x[i]] |= F; // TODO use second pattern
+		B[0][pattern0[i]] |= F;
+		B[1][pattern1[i]] |= F; // TODO use second pattern
 		R[i] = F;
 		F <<= 1;
 	}
@@ -34,8 +34,8 @@ int bndm_search(unsigned char *x, unsigned int m) {
         S[1][i] = 0;
     }
     for (i = 0, j = 1; i < m; ++i, j <<= 1){
-        S[0][x[i]] |= j;
-        S[1][x[i]] |= j; // TODO use second pattern
+        S[0][pattern0[i]] |= j;
+        S[1][pattern1[i]] |= j; // TODO use second pattern
     }
 
 	/* Searching */

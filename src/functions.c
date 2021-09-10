@@ -91,10 +91,12 @@ int getFileSize(FILE *f)
 
 void readInputFile(char *fName, unsigned char **readBuffer, int *size)
 {
-	FILE *fr = fopen(fName, "r");
-	*size = getFileSize(fr);
-	*readBuffer = (unsigned char*)malloc((*size) * sizeof(char));
-	fread(*readBuffer, 1, *size, fr);
+    int unused __attribute__((unused));
+
+    FILE *fr = fopen(fName, "r");
+    *size = getFileSize(fr);
+    *readBuffer = (unsigned char*)malloc((*size) * sizeof(char));
+    unused = fread(*readBuffer, 1, *size, fr);
 	fclose(fr);
 
 	//printf("readInputFile: %c\n",*readBuffer[0]);
@@ -112,7 +114,7 @@ void printString(unsigned int start, unsigned char length)
 	printf("start = %d, length = %d", start, length);
 	
 	for (unsigned int i = start; i < (start + length); i++)
-		printf("i = %d: %c\n", writeBuffer[i]);
+		printf("i = %d: %c\n", i, writeBuffer[i]);
 
 	printf("\n");
 }
