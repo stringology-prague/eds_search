@@ -38,7 +38,8 @@ int main(int argc, char * argv[])
 	
 	struct rusage ruse, ruse1, ruse2;
 	double ssec1, ssec2, usec1, usec2;
-	srand(time(NULL));
+//	srand(time(NULL));
+    srand(123);
 
 	switch (algoritm) {
 
@@ -57,7 +58,7 @@ int main(int argc, char * argv[])
 
 
 BNDM:;
-	
+
 	getrusage(RUSAGE_SELF, &ruse);
 	ssec1 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
 	usec1 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);

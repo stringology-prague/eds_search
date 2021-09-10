@@ -138,3 +138,12 @@ unsigned int randomSelectPattern(unsigned char** pattern, unsigned int pattLen, 
 
 	return start;
 }
+
+int min(int a, int b)
+{
+    if (a < b)
+    {
+        return a;
+    }
+    return b;
+}
