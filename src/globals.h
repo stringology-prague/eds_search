@@ -19,3 +19,9 @@ extern unsigned int rbPointer;
 extern unsigned char* writeBuffer;
 extern unsigned int wbPointer;
 extern unsigned int aPointer;
+
+#ifdef DEBUG
+#define DEBUG_PRINT(...) do{ fprintf( stderr, __VA_ARGS__ ); } while( 0 )
+#else
+#define DEBUG_PRINT(...) do{ } while ( 0 )
+#endif

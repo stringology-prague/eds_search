@@ -1,6 +1,6 @@
 SRC = ./src
 CC = gcc
-CFLAGS = -O3 -mavx -msse2 
+CFLAGS = -O3 -mavx -msse2
 
 all:	eds_search clean0
 
