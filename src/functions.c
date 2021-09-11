@@ -119,11 +119,9 @@ void printString(unsigned int start, unsigned char length)
 	printf("\n");
 }
 
-unsigned int randomSelectPattern(unsigned char** pattern, unsigned int pattLen, unsigned char* file, unsigned int fileSize) {
+unsigned int randomSelectPattern(unsigned char* pattern, unsigned int pattLen, unsigned char* file, unsigned int fileSize) {
 
 	unsigned int  start = rand() % fileSize;
-	
-	(*pattern) = (char*)malloc((pattLen) * sizeof(char));
 
 	unsigned int pPos = 0;
 	unsigned fPos = start;
@@ -133,9 +131,9 @@ unsigned int randomSelectPattern(unsigned char** pattern, unsigned int pattLen, 
 			fPos++;
 			continue;
 		}
-		(*pattern)[pPos++] = file[fPos++];
+		pattern[pPos++] = file[fPos++];
 	}
-	(*pattern)[pPos] = '\0';
+	pattern[pPos] = '\0';
 	//memcpy(*pattern, file + start, pattLen);
 
 	return start;

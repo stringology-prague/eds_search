@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -9,6 +11,8 @@
 #include "sa.h"
 #include "translator.h"
 
+
+
 //Globals
 unsigned char* readBuffer;
 unsigned int fSize;
@@ -18,6 +22,8 @@ unsigned char* writeBuffer;
 unsigned int wbPointer;
 unsigned int aPointer;
 
+const size_t MAX_PATTERN_LENGTH = sizeof(int) * 8;
+
 int main(int argc, char * argv[])
 {
 	rbPointer = 0;
@@ -25,16 +31,28 @@ int main(int argc, char * argv[])
 	aPointer = 0;
 
 	unsigned int LOOPS = (unsigned int)atoi(argv[2]);
-	unsigned int pattLen = (unsigned int)atoi(argv[3]);
+	size_t pattLen = (unsigned int)atoi(argv[3]);
 	unsigned char algoritm = (unsigned char)atoi(argv[4]);
+    unsigned char *pattern0 = (unsigned char*)calloc(MAX_PATTERN_LENGTH, sizeof(char));
+    unsigned char *pattern1 = (unsigned char*)calloc(MAX_PATTERN_LENGTH, sizeof(char));
+
+    if (argc >= 6){
+        pattLen = strnlen(argv[5], MAX_PATTERN_LENGTH);
+        strncpy(pattern0, argv[5], pattLen);
+    }
+    if (argc >= 7) {
+        if (pattLen != strnlen(argv[6], MAX_PATTERN_LENGTH)) {
+            fprintf(stderr, "Two patterns supplied, but length is not matching!");
+            exit(1);
+        }
+        strncpy(pattern1, argv[6], pattLen);
+    }
 
 	readInputFile(argv[1], &readBuffer, &fSize);
 	writeBuffer = malloc((fSize + 1000000) *sizeof(unsigned char*));
 	//printf("fSize = %d\n", fSize);
 	translate();
 	writeOutputFile("text/test.out", &writeBuffer, wbPointer);
-		
-	unsigned char *pattern, *pattern1;
 	
 	struct rusage ruse, ruse1, ruse2;
 	double ssec1, ssec2, usec1, usec2;
@@ -66,14 +84,16 @@ BNDM:;
 
 	for (int i = 0; i < LOOPS; i++)
 	{
-		randomSelectPattern(&pattern, pattLen, readBuffer, fSize);
-		randomSelectPattern(&pattern1, pattLen, readBuffer, fSize);
-		printf("Pattern: %s\n", pattern);
+        if (*pattern0 == 0){
+            randomSelectPattern(pattern0, pattLen, readBuffer, fSize);
+        }
+        if (*pattern1 == 0){
+            randomSelectPattern(pattern1, pattLen, readBuffer, fSize);
+        }
+		printf("Pattern0: %s\n", pattern0);
 		printf("Pattern1: %s\n", pattern1);
 		aPointer = 0;
-		bndm_search(pattern, pattern1, pattLen);
-		free(pattern);
-		free(pattern1);
+		bndm_search(pattern0, pattern1, pattLen);
 	}
 
 	getrusage(RUSAGE_SELF, &ruse);
@@ -83,6 +103,9 @@ BNDM:;
 	printf("User time:\t%f s\n", (usec2 - usec1) / (double)1000000);
 	printf("System time:\t%f s\n", (ssec2 - ssec1) / (double)1000000);
 	printf("Total time:\t%f s\n", ((usec2 + ssec2) - (usec1 + ssec1)) / (double)1000000);
+
+    free(pattern0);
+    free(pattern1);
 	return 0;
 
 SA:;
@@ -94,11 +117,13 @@ SA:;
 
 	for (int i = 0; i < LOOPS; i++)
 	{
-		randomSelectPattern(&pattern, pattLen, readBuffer, fSize);
-		printf("Pattern: %s\n", pattern);
+        if (*pattern0 == 0){
+            randomSelectPattern(pattern0, pattLen, readBuffer, fSize);
+        }
+		printf("Pattern: %s\n", pattern0);
 		aPointer = 0;
-		SA_search(pattern, pattLen);
-		free(pattern);
+		SA_search(pattern0, pattLen);
+		free(pattern0);
 	}
 
 	getrusage(RUSAGE_SELF, &ruse);
