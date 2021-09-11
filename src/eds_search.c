@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "functions.h"
 #include "bndm.h"
+#include "bndm_eds_mp.h"
 #include "sa.h"
 #include "translator.h"
 
@@ -69,13 +70,16 @@ int main(int argc, char * argv[])
 		goto SA;
 		break;
 
+	case 3:
+		goto BNDM_EDS_MP;
+		break;
+
 	default:
 		printf("Invalid algorithm option!\n");
 		return EXIT_FAILURE;
 	}
 
-
-BNDM:;
+BNDM_EDS_MP:;
 
 	getrusage(RUSAGE_SELF, &ruse);
 	ssec1 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
@@ -93,7 +97,36 @@ BNDM:;
 		printf("Pattern0: %s\n", pattern0);
 		printf("Pattern1: %s\n", pattern1);
 		aPointer = 0;
-		bndm_search(pattern0, pattern1, pattLen);
+		bndm_eds_mp_search(pattern0, pattern1, pattLen);
+	}
+
+	getrusage(RUSAGE_SELF, &ruse);
+	ssec2 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
+	usec2 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);
+
+	printf("User time:\t%f s\n", (usec2 - usec1) / (double)1000000);
+	printf("System time:\t%f s\n", (ssec2 - ssec1) / (double)1000000);
+	printf("Total time:\t%f s\n", ((usec2 + ssec2) - (usec1 + ssec1)) / (double)1000000);
+
+    free(pattern0);
+    free(pattern1);
+	return 0;
+
+BNDM:;
+
+	getrusage(RUSAGE_SELF, &ruse);
+	ssec1 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
+	usec1 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);
+	getrusage(RUSAGE_SELF, &ruse1);
+
+	for (int i = 0; i < LOOPS; i++)
+	{
+        if (*pattern0 == 0){
+            randomSelectPattern(pattern0, pattLen, readBuffer, fSize);
+        }
+		printf("Pattern: %s\n", pattern0);
+		aPointer = 0;
+		bndm_search(pattern0, pattLen);
 	}
 
 	getrusage(RUSAGE_SELF, &ruse);
@@ -123,7 +156,6 @@ SA:;
 		printf("Pattern: %s\n", pattern0);
 		aPointer = 0;
 		SA_search(pattern0, pattLen);
-		free(pattern0);
 	}
 
 	getrusage(RUSAGE_SELF, &ruse);
@@ -134,6 +166,7 @@ SA:;
 	printf("System time:\t%f s\n", (ssec2 - ssec1) / (double)1000000);
 	printf("Total time:\t%f s\n", ((usec2 + ssec2) - (usec1 + ssec1)) / (double)1000000);
 
-
+    free(pattern0);
+    free(pattern1);
 	return 0;
 }

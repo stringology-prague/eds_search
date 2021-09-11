@@ -6,49 +6,39 @@
 #include "globals.h"
 #include "functions.h"
 
-int bndm_search(unsigned char *pattern0, unsigned char *pattern1, unsigned int m) {
-	unsigned int B[2][SIGMA];
-	unsigned int S[2][SIGMA];
-    //Stores starting register values for change from BNDM to SA. Basically one-set-bit on different positions 0 to m-1.
-	unsigned int* R[2];
-    R[0] = (unsigned int*)malloc(m*sizeof(unsigned int));
-    R[1] = (unsigned int*)malloc(m*sizeof(unsigned int));
-	int i, j, F, D[2], D2[2], last, last_candidate[2], count, R1[2], R2[2];
+int bndm_search(unsigned char *x, unsigned int m) {
+	unsigned int B[SIGMA];
+	unsigned int S[SIGMA];
+	unsigned int* R = (unsigned int*)malloc(m*sizeof(unsigned int)); //Stores starting register values for change from BNDM to SA. Basically one-set-bit on different positions 0 to m-1.
+	int i, j, F, D, D2, last, count, R1, R2;
 
 	/* BADM Preprocessing */
-	for (i = 0; i<SIGMA; i++){
-        B[0][i] = 0;
-        B[1][i] = 0;
-    }
+	for (i = 0; i<SIGMA; i++) B[i] = 0;
 	F = 1;
+	
 	for (i = m - 1; i >= 0; i--) {
-		B[0][pattern0[i]] |= F;
-		B[1][pattern1[i]] |= F;
-		R[0][i] = F;
-		R[1][i] = F;
+		//printf("bndm_search: 3, i = %d\n", i);
+		B[x[i]] |= F;
+		R[i] = F;
 		F <<= 1;
 	}
 	F >>= 1;
-
 	/*SA Preprocessing*/
-	for (i = 0; i < SIGMA; ++i){
-        S[0][i] = 0;
-        S[1][i] = 0;
-    }
-    for (i = 0, j = 1; i < m; ++i, j <<= 1){
-        S[0][pattern0[i]] |= j;
-        S[1][pattern1[i]] |= j;
-    }
-
+	for (i = 0; i < SIGMA; ++i) S[i] = 0;
+		for (i = 0, j = 1; i < m; ++i, j <<= 1)
+			S[x[i]] |= j;
+	
 	/* Searching */
+
 	unsigned char elementNum;
 	unsigned int elementLength;
 	unsigned int elementStart, elementEnd;
 	unsigned int segmentCounter = 0;
 	unsigned int elementCounter = 0;
+		
 	count = 0;
-	R1[0] = R2[0] = D2[0] = 0;
-	R1[1] = R2[1] = D2[1] = 0;
+	R1 = R2 = D2 = 0;
+	
 
 	while (aPointer < wbPointer)
 	{
@@ -56,40 +46,27 @@ int bndm_search(unsigned char *pattern0, unsigned char *pattern1, unsigned int m
 		elementNum = (unsigned char)writeBuffer[aPointer++];
 		segmentCounter++;
 		elementCounter += elementNum;
-		R1[0] = R2[0];
-		R1[1] = R2[1];
-        R2[0] = 0;
-        R2[1] = 0;
+		R1 = R2; R2 = 0;
 
 		//Process one element of the segment.
 		for (unsigned char k = 0; k < elementNum; k++)
 		{
+			//elementLenght = (unsigned char)writeBuffer[aPointer++]; elementLenght <<= 8;
+			//elementLenght |= (unsigned char)writeBuffer[aPointer++];
 			elementLength = byteDecodeInt();
 			elementStart = aPointer;
 			elementEnd = elementStart + elementLength;
-            DEBUG_PRINT("  ELEMENT segment = %d, element = %d/%d, start = %d, end = %d, len = %d, elementCounter = %d\n",
-                   segmentCounter, k, elementNum, elementStart, elementEnd, elementLength, elementCounter);
+			//printf("bndm_search 1: k = %d, elementNum = %d, elementLength = %d, elementStart = %d, elementEnd = %d\n", k, elementNum, elementLenght, elementStart, elementEnd);
 
 			//Perform SA search at the beginning of the element.
 			j = elementStart;
-			D[0] = R1[0];
-			D[1] = R1[1];
+			D = R1;
 			while (j < (elementStart + m) && j < elementEnd) {
-                char curr_symbol = writeBuffer[j];
-				D[0] = ((D[0] << 1) | 1) & S[0][curr_symbol];
-                D[1] = ((D[1] << 1) | 1) & S[1][curr_symbol];
-                DEBUG_PRINT("    SA1 j=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, curr_symbol, D[0], D[1]);
+				D = ((D << 1) | 1) & S[writeBuffer[j]];
 
-                if (D[0] & F) {
-                    count++;
-                    DEBUG_PRINT("      ");
-                    printf("SA HIT (pattern0): j = %d, c = %c, D[0] = 0x%x, S = 0x%x, elementStart = %d, m = %d, R1 = 0x%x\n", j, curr_symbol, D[0], S[0][curr_symbol], elementStart, m, R1[0]);
-                }
-                if (D[1] & F) {
-                    count++;
-                    DEBUG_PRINT("      ");
-                    printf("SA HIT (pattern1): j = %d, c = %c, D[1] = 0x%x, S = 0x%x, elementStart = %d, m = %d, R1 = 0x%x\n", j, curr_symbol, D[1], S[1][curr_symbol], elementStart, m, R1[1]);
-                }
+				
+
+				if (D & F) { count++; printf("SA HIT: j = %d, c = %c, D = %x, S = %x, elementStart = %d, m = %d, R1 = %x\n", j, writeBuffer[j], D, S[writeBuffer[j]], elementStart, m, R1);}
 				j++;
 			}
 			if (elementLength < m)
@@ -99,78 +76,51 @@ int bndm_search(unsigned char *pattern0, unsigned char *pattern1, unsigned int m
 			j = elementStart;
 			while (j + m - 1 < elementEnd)
 			{	
-				D2[0] = 0;
-				D2[1] = 0;
+				D2 = 0;
 				last = m;
-                last_candidate[0] = last;
-                last_candidate[1] = last;
 				i = m - 1;
-				D[0] = ~0;
-				D[1] = ~0;
-                DEBUG_PRINT("    BNDM j=%d, i=%d\n", j, i);
-				while (i >= 0 && (D[0] != 0 || D[1] != 0)) {
-                    char curr_symbol = writeBuffer[j + i];
-					D[0] &= B[0][curr_symbol];
-                    D[1] &= B[1][curr_symbol];
-                    DEBUG_PRINT("      BNDM j=%d, i=%d, j+i=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, i, j+i, curr_symbol, D[0], D[1]);
-                    i--;
+				D = ~0;
+				while (i >= 0 && D != 0) {
+					D &= B[writeBuffer[j + i]];
 
-                    int update_last = 0;
-					if (D[0] != 0  && (D[0] & F) != 0) {
-						if (i >= 0) { // Pure pattern prefix
-                            last_candidate[0] = i + 1;
-                            D2[0] |= R[0][last_candidate[0]];
-                        }
-						else { // Match
-                            count++;
-                            DEBUG_PRINT("        ");
-                            printf("BNDM HIT (pattern0): j = %d, i = %d, c = %c, D = 0x%x, B = 0x%x\n", j, i, curr_symbol, D[0], B[0][curr_symbol]);
-                        }
+					
+
+					i--;
+					if (D != 0  && (D & F) != 0) {
+						if (i >= 0) { last = i + 1; D2 |= R[last]; }
+						else { count++; printf("BNDM HIT: j = %d, i = %d, c = %c, D = %x, B = %x\n", j, i, writeBuffer[j + i], D, B[writeBuffer[j + i]]);}
 					}
-					if (D[1] != 0  && (D[1] & F) != 0) {
-						if (i >= 0) {
-                            last_candidate[1] = i + 1;
-                            D2[1] |= R[1][last_candidate[1]];
-                        }
-						else {
-                            count++;
-                            DEBUG_PRINT("        ");
-                            printf("BNDM HIT (pattern1): j = %d, i = %d, c = %c, D = 0x%x, B = 0x%x\n", j, i, curr_symbol, D[1], B[1][curr_symbol]);
-                        }
-					}
-					D[0] <<= 1;
-					D[1] <<= 1;
+					D <<= 1;
 				}
-                last = min(last_candidate[0], last_candidate[1]);
 				j += last;
 			}
-			//Perform SA search at the end of the element.
-            DEBUG_PRINT("  BNDM->SA2 j=%d last=%d, jnext = %d, D[0]=0x%x, D[1]=0x%x\n", j, last, j + m - last, D2[0], D2[1]);
-			j += m - last; //Moving j pointer to the initial position for SA.
-			D[0] = D2[0]; //Setting the initial value to SA register.
-			D[1] = D2[1]; //Setting the initial value to SA register.
-			while(j < elementEnd) {
-                char curr_symbol = writeBuffer[j];
-				D[0] = ((D[0] << 1) | 1) & S[0][curr_symbol];
-                D[1] = ((D[1] << 1) | 1) & S[1][curr_symbol];
-                DEBUG_PRINT("    SA2 j=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, curr_symbol, D[1], D[2]);
+			//printf("bndm_search 4: j = %d, last = %d, F = %x\n", j, last, F);
 
-				if (D[0] & F)
+
+			//Perform SA search at the end of the element.
+			
+			j += m - last; //Moving j pointer to the initial position for SA.
+			D = D2; //Setting the initial value to SA register.
+			
+
+
+			if (j >= 6136576 && j <= 6136584)
+				printf("BNDM: j = %d, D = %x, last = %d, elementEnd = %d, D2 = %x, R[last] = %x\n", j, D, last, elementEnd, D2, R[last]);
+			
+			while(j < elementEnd) {
+				D = ((D << 1) | 1) & S[writeBuffer[j]];
+				//printf("bndm_search 5: j = %d, c = %c, D = %x, S = %x\n", j, writeBuffer[j], D, S[writeBuffer[j]]);
+
+				if (D & F)
 				{
 					count++;//This cannot happen...
-                    DEBUG_PRINT("      SA2 HIT (pattern0): j = %d, D[0] = 0x%x\n",j,D[0]);
-				}
-				if (D[1] & F)
-				{
-					count++;//This cannot happen...
-                    DEBUG_PRINT("      SA2 HIT (pattern1): j = %d, D[1] = 0x%x\n",j,D[1]);
+					printf("SA2 HIT: j = %d, D = %x\n",j,D);
 				}
 				j++;
 			}
 
-element_end:
-			R2[0] |= D[0]; //Merge the SA registers of single elements.
-			R2[1] |= D[1]; //Merge the SA registers of single elements.
+			element_end:
+			R2 |= D; //Merge the SA registers of single elements.
 
 			//Set the pointer to the beginning of the next element.
 			aPointer += elementLength;
