@@ -23,7 +23,7 @@ unsigned char* writeBuffer;
 unsigned int wbPointer;
 unsigned int aPointer;
 
-const size_t MAX_PATTERN_LENGTH = sizeof(int) * 8;
+const size_t MAX_DNA_PATTERNS = 2;
 
 int main(int argc, char * argv[])
 {
@@ -34,6 +34,7 @@ int main(int argc, char * argv[])
 	unsigned int LOOPS = (unsigned int)atoi(argv[2]);
 	size_t pattLen = (unsigned int)atoi(argv[3]);
 	unsigned char algoritm = (unsigned char)atoi(argv[4]);
+    unsigned char patterns[MAX_DNA_PATTERNS][MAX_PATTERN_LENGTH];
     unsigned char *pattern0 = (unsigned char*)calloc(MAX_PATTERN_LENGTH, sizeof(char));
     unsigned char *pattern1 = (unsigned char*)calloc(MAX_PATTERN_LENGTH, sizeof(char));
 
@@ -82,6 +83,32 @@ int main(int argc, char * argv[])
 BNDM_EDS_MP:;
 
     init_IUPAC_SYMBOLS_TO_BASES();
+    init_AA_TO_COMPR_IUPAC_SYMBOLS();
+
+    if (*pattern0 == 0) {
+        fprintf(stderr, "BNDM-EDS-MP requires for AA pattern to be specified as argument!");
+        free(pattern0);
+        free(pattern1);
+        return 1;
+    }
+    int num_dna_patterns = translate_aa_pattern(pattern0, pattLen, patterns, MAX_DNA_PATTERNS, MAX_PATTERN_LENGTH);
+    free(pattern0);
+    free(pattern1);
+    int dna_pattern_length = pattLen * 3;
+    if (num_dna_patterns == 0){
+        fprintf(stderr, "BNDM-EDS-MP failed to generate any DNA patterns!");
+        return 1;
+    }
+
+    pattern0 = patterns[0];
+    if (num_dna_patterns == 2){
+        pattern1 = patterns[1];
+    } else {
+        pattern1 = patterns[0];
+    }
+    printf("BNDM-EDS-MP Pattern0: %s\n", pattern0);
+    printf("BNDM-EDS-MP Pattern1: %s\n", pattern1);
+
 	getrusage(RUSAGE_SELF, &ruse);
 	ssec1 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
 	usec1 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);
@@ -89,16 +116,8 @@ BNDM_EDS_MP:;
 
 	for (int i = 0; i < LOOPS; i++)
 	{
-        if (*pattern0 == 0){
-            randomSelectPattern(pattern0, pattLen, readBuffer, fSize);
-        }
-        if (*pattern1 == 0){
-            randomSelectPattern(pattern1, pattLen, readBuffer, fSize);
-        }
-		printf("Pattern0: %s\n", pattern0);
-		printf("Pattern1: %s\n", pattern1);
 		aPointer = 0;
-		bndm_eds_mp_search(pattern0, pattern1, pattLen);
+		bndm_eds_mp_search(pattern0, pattern1, dna_pattern_length);
 	}
 
 	getrusage(RUSAGE_SELF, &ruse);
@@ -109,8 +128,6 @@ BNDM_EDS_MP:;
 	printf("System time:\t%f s\n", (ssec2 - ssec1) / (double)1000000);
 	printf("Total time:\t%f s\n", ((usec2 + ssec2) - (usec1 + ssec1)) / (double)1000000);
 
-    free(pattern0);
-    free(pattern1);
 	return 0;
 
 BNDM:;

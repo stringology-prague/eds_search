@@ -1,6 +1,6 @@
 //Definitions
 #define SIGMA 256
-#define BASES 4
+#define MAX_PATTERN_LENGTH (sizeof(int) * 8)
 
 //Byte encoder limits for single codeword lengths
 #define ENC_1B 200
