@@ -1,5 +1,6 @@
 //Definitions
 #define SIGMA 256
+#define BASES 4
 
 //Byte encoder limits for single codeword lengths
 #define ENC_1B 200

@@ -5,6 +5,7 @@
 #include <sys/resource.h>
 #include "globals.h"
 #include "functions.h"
+#include "protein_table.h"
 
 int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigned int m) {
 	unsigned int B[2][SIGMA];
@@ -22,8 +23,11 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
     }
 	F = 1;
 	for (i = m - 1; i >= 0; i--) {
-		B[0][pattern0[i]] |= F;
-		B[1][pattern1[i]] |= F;
+
+        for (int b = 0; b < BASES; b++){
+            B[0][IUPAC_SYMBOLS_TO_BASES[pattern0[i]][b]] |= F;
+            B[1][IUPAC_SYMBOLS_TO_BASES[pattern1[i]][b]] |= F;
+        }
 		R[0][i] = F;
 		R[1][i] = F;
 		F <<= 1;
@@ -36,8 +40,10 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
         S[1][i] = 0;
     }
     for (i = 0, j = 1; i < m; ++i, j <<= 1){
-        S[0][pattern0[i]] |= j;
-        S[1][pattern1[i]] |= j;
+        for (int b = 0; b < BASES; b++){
+            S[0][IUPAC_SYMBOLS_TO_BASES[pattern0[i]][b]] |= j;
+            S[1][IUPAC_SYMBOLS_TO_BASES[pattern1[i]][b]] |= j;
+        }
     }
 
 	/* Searching */

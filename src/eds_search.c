@@ -11,7 +11,7 @@
 #include "bndm_eds_mp.h"
 #include "sa.h"
 #include "translator.h"
-
+#include "protein_table.h"
 
 
 //Globals
@@ -81,6 +81,7 @@ int main(int argc, char * argv[])
 
 BNDM_EDS_MP:;
 
+    init_IUPAC_SYMBOLS_TO_BASES();
 	getrusage(RUSAGE_SELF, &ruse);
 	ssec1 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
 	usec1 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);
