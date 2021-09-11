@@ -44,13 +44,15 @@ void translate()
 		length++;
 		prevC = c;
 	}
-
-	writeBuffer[segmentStart] = (unsigned char)elementNum;
+    if (c == '}'){
+        return;
+    }
+    length--;
+	writeBuffer[segmentStart] = (unsigned char)elementNum+1;
 	
 	//writeBuffer[wbPointer + 1] = (unsigned char)(length & 0x00ff);
 	//writeBuffer[wbPointer] = (unsigned char)(length >> 8); wbPointer += 2;
 	byteEncodeInt(length);
-
 	strncpy(writeBuffer + wbPointer, readBuffer + rbPointer - length, length);
 	wbPointer += length;
 }
