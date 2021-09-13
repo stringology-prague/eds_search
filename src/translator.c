@@ -19,17 +19,13 @@ void translate()
 		c = readBuffer[rbPointer++];
 		//if(rbPointer>2814597)
 			//printf("c = %c, rbPointer = %d, wbPointer = %d\n",c,rbPointer,wbPointer);
-		if (c == '{' || c == '}' || c == ',')
+		if (length && (c == '{' || c == '}' || c == ','))
 		{
-			//writeBuffer[wbPointer+1] = (unsigned char)((length-1)&0x00ff);
-			//writeBuffer[wbPointer] = (unsigned char)((length - 1) >> 8); wbPointer += 2;
-			byteEncodeInt(length-1);
-
-			strncpy(writeBuffer + wbPointer, readBuffer + rbPointer - length, length - 1);
-			//printString(rbPointer - length, length);
-			wbPointer += length-1;
-			elementNum++;
-			length = 0;
+            byteEncodeInt(length-1);
+            strncpy(writeBuffer + wbPointer, readBuffer + rbPointer - length, length - 1);
+            wbPointer += length-1;
+            elementNum++;
+            length = 0;
 		}
 
 		if (c == '{' || c == '}')
