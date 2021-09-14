@@ -177,17 +177,6 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
                 D[0] = (((D[0] | DC[0]) << 1) | 1) & S[0][curr_symbol];
                 D[1] = (((D[1] | DC[1]) << 1) | 1) & S[1][curr_symbol];
                 DEBUG_PRINT("    SA2 j=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, curr_symbol, D[1], D[2]);
-
-                if (D[0] & F)
-                {
-                    count++;//This cannot happen...
-                    DEBUG_PRINT("      SA2 HIT (pattern0): j = %d, D[0] = 0x%x\n",j,D[0]);
-                }
-                if (D[1] & F)
-                {
-                    count++;//This cannot happen...
-                    DEBUG_PRINT("      SA2 HIT (pattern1): j = %d, D[1] = 0x%x\n",j,D[1]);
-                }
                 j++;
             }
 
