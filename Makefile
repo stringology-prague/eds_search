@@ -1,12 +1,12 @@
 SRC = ./src
 CC = gcc
-override CFLAGS += -O3 -mavx -msse2
-#override CFLAGS += -O0 -ggdb -mavx -msse2
+#override CFLAGS += -DNDEBUG -O3 -mavx -msse2
+override CFLAGS += -O0 -DDEBUG -ggdb -mavx -msse2
 
 all:	eds_search clean0
 
-eds_search: eds_search.o translator.o functions.o bndm.o bndm_eds_mp.o protein_table.o sa.o $(SRC)/globals.h
-	$(CC) $(CFLAGS) -o eds_search eds_search.o translator.o functions.o bndm.o sa.o bndm_eds_mp.o protein_table.o
+eds_search: eds_search.o translator.o functions.o bndm.o bndm_eds_mp.o bndm_aa.o protein_table.o sa.o $(SRC)/globals.h
+	$(CC) $(CFLAGS) -o eds_search eds_search.o translator.o functions.o bndm.o sa.o bndm_eds_mp.o bndm_aa.o protein_table.o
 
 eds_search.o: $(SRC)/eds_search.c
 	$(CC) $(CFLAGS) -c $(SRC)/eds_search.c
@@ -22,6 +22,9 @@ bndm.o: $(SRC)/bndm.c
 
 bndm_eds_mp.o: $(SRC)/bndm_eds_mp.c
 	$(CC) $(CFLAGS) -c $(SRC)/bndm_eds_mp.c
+
+bndm_aa.o: $(SRC)/bndm_aa.c
+	$(CC) $(CFLAGS) -c $(SRC)/bndm_aa.c
 
 protein_table.o: $(SRC)/protein_table.c
 	$(CC) $(CFLAGS) -c $(SRC)/protein_table.c
