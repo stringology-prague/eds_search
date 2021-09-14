@@ -56,6 +56,9 @@ int main(int argc, char * argv[])
 	//printf("fSize = %d\n", fSize);
 	translate();
 	writeOutputFile("text/test.out", &writeBuffer, wbPointer);
+
+    init_IUPAC_SYMBOLS_TO_BASES();
+    init_AA_TO_COMPR_IUPAC_SYMBOLS();
 	
 	struct rusage ruse, ruse1, ruse2;
 	double ssec1, ssec2, usec1, usec2;
@@ -86,9 +89,6 @@ int main(int argc, char * argv[])
 	}
 
 BNDM_EDS_AA:;
-
-//    init_IUPAC_SYMBOLS_TO_BASES();
-//    init_AA_TO_COMPR_IUPAC_SYMBOLS();
 
 //    if (*pattern0 == 0) {
 //        fprintf(stderr, "BNDM-EDS-MP requires for AA pattern to be specified as argument!");
@@ -145,9 +145,6 @@ BNDM_EDS_AA:;
 	return 0;
 
 BNDM_EDS_MP:;
-
-    init_IUPAC_SYMBOLS_TO_BASES();
-    init_AA_TO_COMPR_IUPAC_SYMBOLS();
 
     if (*pattern0 == 0) {
         fprintf(stderr, "BNDM-EDS-MP requires for AA pattern to be specified as argument!");

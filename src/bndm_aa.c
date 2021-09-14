@@ -11,15 +11,16 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
     unsigned int B[2][SIGMA];
     unsigned int S[2][SIGMA];
 
-    // ShiftAnd Dual-Pattern Mask - used to mask incoming states from the other pattern
-    const unsigned int SA_DP_MASK = 0x24924924U;
-    // const unsigned long int SA_DP_MASK = 0x4924924924924924UL;
-
     // Stores starting register values for change from BNDM to SA. Basically one-set-bit on different positions 0 to m-1.
     unsigned int* R[2];
     R[0] = (unsigned int*)malloc(m*sizeof(unsigned int));
     R[1] = (unsigned int*)malloc(m*sizeof(unsigned int));
     int i, j, F, D[2], D2[2], last, last_candidate[2], count, R1[2], R2[2];
+
+    // ShiftAnd Dual-Pattern Mask - used to mask incoming states from the other pattern
+    const unsigned int STATE_VECTOR_MERGE_MASK = 0x24924924U;
+    // const unsigned long int STATE_VECTOR_MERGE_MASK = 0x4924924924924924UL; // For 64bit matching
+    int DC[2]; // Matching states taken from the other pattern (masked by STATE_VECTOR_MERGE_MASK for every 3 chars)
 
     /* BADM Preprocessing */
     for (i = 0; i<SIGMA; i++){
@@ -87,9 +88,8 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
             D[1] = R1[1];
             while (j < (elementStart + m) && j < elementEnd) {
                 char curr_symbol = writeBuffer[j];
-                int DC[2]; // Vector states taken from the other pattern (for every 3 characters only)
-                DC[0] = D[1] & SA_DP_MASK;
-                DC[1] = D[0] & SA_DP_MASK;
+                DC[0] = D[1] & STATE_VECTOR_MERGE_MASK;
+                DC[1] = D[0] & STATE_VECTOR_MERGE_MASK;
                 D[0] = (((D[0] | DC[0]) << 1) | 1) & S[0][curr_symbol];
                 D[1] = (((D[1] | DC[1]) << 1) | 1) & S[1][curr_symbol];
                 DEBUG_PRINT("    SA1 j=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, curr_symbol, D[0], D[1]);
@@ -121,25 +121,20 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
                 i = m - 1;
                 D[0] = ~0;
                 D[1] = ~0;
-                DEBUG_PRINT("    BNDM j=%d, i=%d\n", j, i);
+                DEBUG_PRINT("    BNDM j=%d, i=%d, j+i=%d, D2[0]=%x, D2[1]=%x, last=%d, text=%.*s\n", j, i, j+i, D2[0], D2[1], last, m,writeBuffer+j);
                 while (i >= 0 && (D[0] != 0 || D[1] != 0)) {
                     char curr_symbol = writeBuffer[j + i];
+                    D[0] = D[0] & B[0][curr_symbol];
+                    D[1] = D[1] & B[1][curr_symbol];
 
-                    if ((m - 1 - i) % 3 == 0) { // Every 3 symbols, we can use a state from either pattern
-                        D[0] = (D[0] | D[1]) & B[0][curr_symbol];
-                        D[1] = (D[0] | D[1]) & B[1][curr_symbol];
-                    } else {
-                        D[0] = D[0] & B[0][curr_symbol];
-                        D[1] = D[1] & B[1][curr_symbol];
-                    }
-
-                    DEBUG_PRINT("      BNDM j=%d, i=%d, j+i=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, i, j+i, curr_symbol, D[0], D[1]);
+                    DEBUG_PRINT("      BNDM j=%d, i=%d, j+i=%d, curr_symbol=%c, (m-1-i)mod3=%d, D[0]=0x%x, DC[0]=0x%x, B[0][curr_symbol]=0x%x, D[1]=0x%x, DC[1]=0x%x, B[1][curr_symbol]=0x%x, D[1] | DC[1] = %x\n", j, i, j+i, curr_symbol, (m - 1 - i) % 3, D[0], DC[0], B[0][curr_symbol], D[1], DC[1], B[1][curr_symbol], D[1] | DC[1]);
                     i--;
 
                     if (D[0] != 0  && (D[0] & F) != 0) {
                         if (i >= 0) { // Pure pattern prefix
                             last_candidate[0] = i + 1;
                             D2[0] |= R[0][last_candidate[0]];
+                            DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[0]=%d, R[0][last_candidate[0]=%x, D2[0]=%x\n", j, i, curr_symbol, last_candidate[0], R[0][last_candidate[0]], D2[0]);
                         }
                         else { // Match
                             count++;
@@ -151,6 +146,7 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
                         if (i >= 0) {
                             last_candidate[1] = i + 1;
                             D2[1] |= R[1][last_candidate[1]];
+                            DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[1]=%d, R[1][last_candidate[1]=%x, D2[1]=%x\n", j, i, curr_symbol, last_candidate[1], R[1][last_candidate[1]], D2[1]);
                         }
                         else {
                             count++;
@@ -158,11 +154,15 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
                             printf("BNDM HIT (pattern1): j = %d, i = %d, c = %c, D = 0x%x, B = 0x%x\n", j, i, curr_symbol, D[1], B[1][curr_symbol]);
                         }
                     }
-                    D[0] <<= 1;
-                    D[1] <<= 1;
+
+                    DC[0] = D[1] & STATE_VECTOR_MERGE_MASK;
+                    DC[1] = D[0] & STATE_VECTOR_MERGE_MASK;
+                    D[0] = (D[0] | DC[0]) << 1;
+                    D[1] = (D[1] | DC[1]) << 1;
                 }
-                // TODO Consier if `last` also needs to be reduced to
+                // TODO Consider if `last` as a minimum over both state vectors is sufficient
                 last = min(last_candidate[0], last_candidate[1]);
+                DEBUG_PRINT("    BNDM last=%d\n", last);
                 j += last;
             }
             //Perform SA search at the end of the element.
@@ -172,9 +172,8 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
             D[1] = D2[1]; //Setting the initial value to SA register.
             while(j < elementEnd) {
                 char curr_symbol = writeBuffer[j];
-                int DC[2]; // Vector states taken from the other pattern (for every 3 characters only)
-                DC[0] = D[1] & SA_DP_MASK;
-                DC[1] = D[0] & SA_DP_MASK;
+                DC[0] = D[1] & STATE_VECTOR_MERGE_MASK;
+                DC[1] = D[0] & STATE_VECTOR_MERGE_MASK;
                 D[0] = (((D[0] | DC[0]) << 1) | 1) & S[0][curr_symbol];
                 D[1] = (((D[1] | DC[1]) << 1) | 1) & S[1][curr_symbol];
                 DEBUG_PRINT("    SA2 j=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, curr_symbol, D[1], D[2]);
