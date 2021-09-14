@@ -15,7 +15,7 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
     unsigned int* R[2];
     R[0] = (unsigned int*)malloc(m*sizeof(unsigned int));
     R[1] = (unsigned int*)malloc(m*sizeof(unsigned int));
-    int i, j, F, D[2], D2[2], last, last_candidate[2], count, R1[2], R2[2];
+    int i, j, F, D[2], D2[2], last_candidate[2], matches, R1[2], R2[2];
 
     // ShiftAnd Dual-Pattern Mask - used to mask incoming states from the other pattern
     const unsigned int STATE_VECTOR_MERGE_MASK = 0x24924924U;
@@ -58,7 +58,7 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
     unsigned int elementStart, elementEnd;
     unsigned int segmentCounter = 0;
     unsigned int elementCounter = 0;
-    count = 0;
+    matches = 0;
     R1[0] = R2[0] = D2[0] = 0;
     R1[1] = R2[1] = D2[1] = 0;
 
@@ -72,6 +72,8 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
         R1[1] = R2[1];
         R2[0] = 0;
         R2[1] = 0;
+        DEBUG_PRINT(" SEGMENT segment=%d, elements=%d, totalElements=%d, aPointer=%d",
+                    segmentCounter, elementNum, elementCounter, aPointer);
 
         //Process one element of the segment.
         for (unsigned char k = 0; k < elementNum; k++)
@@ -94,15 +96,12 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
                 D[1] = (((D[1] | DC[1]) << 1) | 1) & S[1][curr_symbol];
                 DEBUG_PRINT("    SA1 j=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, curr_symbol, D[0], D[1]);
 
-                if (D[0] & F) {
-                    count++;
-                    DEBUG_PRINT("      ");
-                    printf("SA HIT (pattern0): j = %d, c = %c, D[0] = 0x%x, S = 0x%x, elementStart = %d, m = %d, R1 = 0x%x\n", j, curr_symbol, D[0], S[0][curr_symbol], elementStart, m, R1[0]);
-                }
-                if (D[1] & F) {
-                    count++;
-                    DEBUG_PRINT("      ");
-                    printf("SA HIT (pattern1): j = %d, c = %c, D[1] = 0x%x, S = 0x%x, elementStart = %d, m = %d, R1 = 0x%x\n", j, curr_symbol, D[1], S[1][curr_symbol], elementStart, m, R1[1]);
+                if (D[0] & F | D[1] & F) {
+                    matches++;
+                    DEBUG_PRINT("      MATCH (p0): j=%d, c=%c, D[0]=0x%x, S=0x%x, elementStart=%d, m=%d, R1=0x%x\n",
+                                j, curr_symbol, D[0], S[0][curr_symbol], elementStart, m, R1[0]);
+                    DEBUG_PRINT("      MATCH (p1): j=%d, c=%c, D[1]=0x%x, S=0x%x, elementStart=%d, m=%d, R1=0x%x\n",
+                                j, curr_symbol, D[1], S[1][curr_symbol], elementStart, m, R1[1]);
                 }
                 j++;
             }
@@ -115,61 +114,57 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
             {
                 D2[0] = 0;
                 D2[1] = 0;
-                last = m;
-                last_candidate[0] = last;
-                last_candidate[1] = last;
-                i = m - 1;
+                last_candidate[0] = m;
+                last_candidate[1] = m;
                 D[0] = ~0;
                 D[1] = ~0;
-                DEBUG_PRINT("    BNDM j=%d, i=%d, j+i=%d, D2[0]=%x, D2[1]=%x, last=%d, text=%.*s\n", j, i, j+i, D2[0], D2[1], last, m,writeBuffer+j);
-                while (i >= 0 && (D[0] != 0 || D[1] != 0)) {
+                DEBUG_PRINT("    BNDM j=%d, i=%d, j+i=%d, D2[0]=%x, D2[1]=%x, last_candidate[0]=%d, last_candidate[1]=%d, text=%.*s\n",
+                            j, i, j+i, D2[0], D2[1], last_candidate[0], last_candidate[1], m,writeBuffer+j);
+                for (i = m -1; i >= 0 && (D[0] != 0 || D[1] != 0); --i) {
                     char curr_symbol = writeBuffer[j + i];
                     D[0] = D[0] & B[0][curr_symbol];
                     D[1] = D[1] & B[1][curr_symbol];
 
-                    DEBUG_PRINT("      BNDM j=%d, i=%d, j+i=%d, curr_symbol=%c, (m-1-i)mod3=%d, D[0]=0x%x, DC[0]=0x%x, B[0][curr_symbol]=0x%x, D[1]=0x%x, DC[1]=0x%x, B[1][curr_symbol]=0x%x, D[1] | DC[1] = %x\n", j, i, j+i, curr_symbol, (m - 1 - i) % 3, D[0], DC[0], B[0][curr_symbol], D[1], DC[1], B[1][curr_symbol], D[1] | DC[1]);
-                    i--;
+                    DEBUG_PRINT("      BNDM j=%d, i=%d, j+i=%d, curr_symbol=%c, (m-1-i)mod3=%d, "
+                                "D[0]=0x%x, DC[0]=0x%x,B[0][curr_symbol]=0x%x, "
+                                "D[1]=0x%x, DC[1]=0x%x, B[1][curr_symbol]=0x%x, D[1] | DC[1] = %x\n",
+                                j, i, j+i,curr_symbol, (m - 1 - i) % 3, D[0], DC[0], B[0][curr_symbol], D[1], DC[1],
+                                B[1][curr_symbol], D[1] | DC[1]);
 
-                    if (D[0] != 0  && (D[0] & F) != 0) {
-                        if (i >= 0) { // Pure pattern prefix
-                            last_candidate[0] = i + 1;
-                            D2[0] |= R[0][last_candidate[0]];
-                            DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[0]=%d, R[0][last_candidate[0]=%x, D2[0]=%x\n", j, i, curr_symbol, last_candidate[0], R[0][last_candidate[0]], D2[0]);
-                        }
-                        else { // Match
-                            count++;
-                            DEBUG_PRINT("        ");
-                            printf("BNDM HIT (pattern0): j = %d, i = %d, c = %c, D = 0x%x, B = 0x%x\n", j, i, curr_symbol, D[0], B[0][curr_symbol]);
-                        }
+                    if ((D[0] & F) != 0 && i > 0) {
+                        last_candidate[0] = i;
+                        D2[0] |= R[0][last_candidate[0]];
+                        DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[0]=%d, R[0][last_candidate[0]=%x, D2[0]=%x\n",
+                                    j, i, curr_symbol, last_candidate[0], R[0][last_candidate[0]], D2[0]);
                     }
-                    if (D[1] != 0  && (D[1] & F) != 0) {
-                        if (i >= 0) {
-                            last_candidate[1] = i + 1;
-                            D2[1] |= R[1][last_candidate[1]];
-                            DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[1]=%d, R[1][last_candidate[1]=%x, D2[1]=%x\n", j, i, curr_symbol, last_candidate[1], R[1][last_candidate[1]], D2[1]);
-                        }
-                        else {
-                            count++;
-                            DEBUG_PRINT("        ");
-                            printf("BNDM HIT (pattern1): j = %d, i = %d, c = %c, D = 0x%x, B = 0x%x\n", j, i, curr_symbol, D[1], B[1][curr_symbol]);
-                        }
+                    if ((D[1] & F) != 0 && i > 0) {
+                        last_candidate[1] = i;
+                        D2[1] |= R[1][last_candidate[1]];
+                        DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[1]=%d, R[1][last_candidate[1]=%x, D2[1]=%x\n",
+                                    j, i, curr_symbol, last_candidate[1], R[1][last_candidate[1]], D2[1]);
                     }
-
+                    if (((D[0] | D[1]) & F) != 0 && i == 0){
+                        matches++;
+                        DEBUG_PRINT("         MATCH (p0): j=%d, i=%d, c=%c, D=0x%x, B=0x%x\n",
+                                    j, i, curr_symbol, D[0], B[0][curr_symbol]);
+                        DEBUG_PRINT("         MATCH (p1): j=%d, i=%d, c=%c, D=0x%x, B=0x%x\n",
+                                    j, i, curr_symbol, D[1], B[1][curr_symbol]);
+                    }
                     DC[0] = D[1] & STATE_VECTOR_MERGE_MASK;
                     DC[1] = D[0] & STATE_VECTOR_MERGE_MASK;
                     D[0] = (D[0] | DC[0]) << 1;
                     D[1] = (D[1] | DC[1]) << 1;
                 }
-                // TODO Consider if `last` as a minimum over both state vectors is sufficient
-                last = min(last_candidate[0], last_candidate[1]);
-                DEBUG_PRINT("    BNDM last=%d\n", last);
-                j += last;
+                DEBUG_PRINT("    BNDM last=%d\n", min(last_candidate[0], last_candidate[1]));
+                j += min(last_candidate[0], last_candidate[1]);
             }
             //Perform SA search at the end of the element.
-            DEBUG_PRINT("  BNDM->SA2 j=%d last=%d, jnext = %d, D[0]=0x%x, D[1]=0x%x\n", j, last, j + m - last, D2[0], D2[1]);
-            j += m - last; //Moving j pointer to the initial position for SA.
+            DEBUG_PRINT("  BNDM->SA2 j=%d, jnext=%d, D2[0]=0x%x, D2[1]=0x%x\n",
+                        j, j + m - min(last_candidate[0], last_candidate[1]), D2[0], D2[1]);
+            j += m - min(last_candidate[0], last_candidate[1]); //Moving j pointer to the initial position for SA.
             D[0] = D2[0]; //Setting the initial value to SA register.
             D[1] = D2[1]; //Setting the initial value to SA register.
+
             while(j < elementEnd) {
                 char curr_symbol = writeBuffer[j];
                 DC[0] = D[1] & STATE_VECTOR_MERGE_MASK;
@@ -189,10 +184,10 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
         }
     }
 
-    printf("count = %d, segments = %d, elements = %d\n", count, segmentCounter, elementCounter);
+    printf("matches = %d, segments = %d, elements = %d\n", matches, segmentCounter, elementCounter);
 
     free(R[0]);
     free(R[1]);
 
-    return count;
+    return matches;
 }
