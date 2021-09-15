@@ -1,7 +1,7 @@
 SRC = ./src
 CC = gcc
-#override CFLAGS += -DNDEBUG -O3 -mavx -msse2
-override CFLAGS += -O0 -DDEBUG -ggdb -mavx -msse2
+override CFLAGS += -DNDEBUG -O3 -mavx -msse2
+#override CFLAGS += -O0 -DDEBUG -ggdb -mavx -msse2
 
 all:	eds_search clean0
 
