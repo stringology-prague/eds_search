@@ -40,7 +40,6 @@ int bndm_eds_iupac_search(const unsigned char* text,
     assert(m <= MAX_PATTERN_LENGTH);
     assert(strnlen(pattern0, m) == strnlen(pattern1, m));
 
-    int R[2][MAX_PATTERN_LENGTH * sizeof(unsigned int)]; // Stores starting register values for change from BNDM to SA
     int S[2][SIGMA], B[2][SIGMA]; // Preprocessed matching vectors for both patterns, S for ShiftAND, B for BNDM
     int F; // Preprocessed masking vector to verify full matches or prefix matches from matching vectors D[*]
 
@@ -58,15 +57,12 @@ int bndm_eds_iupac_search(const unsigned char* text,
         B[1][i] = 0;
     }
     F = 1;
-    memset(R, 0, 2 * MAX_PATTERN_LENGTH * sizeof(unsigned int));
     for (int i = m - 1; i >= 0; i--) {
 
         for (int b = 0; b < BASES; b++){
             B[0][IUPAC_SYMBOLS_TO_BASES[pattern0[i]][b]] |= F;
             B[1][IUPAC_SYMBOLS_TO_BASES[pattern1[i]][b]] |= F;
         }
-        R[0][i] = F;
-        R[1][i] = F;
         F <<= 1;
     }
     F >>= 1;
@@ -84,8 +80,7 @@ int bndm_eds_iupac_search(const unsigned char* text,
     }
 
     /* Searching */
-    R1[0] = R2[0] = D2[0] = 0;
-    R1[1] = R2[1] = D2[1] = 0;
+    R1[0] = R1[1] = R2[0] = R2[1] = D2[0] = D2[1] = 0;
     unsigned int matches = 0, segmentCounter = 0, elementCounter = 0;
 
     while (aPointer < len)
@@ -138,13 +133,10 @@ int bndm_eds_iupac_search(const unsigned char* text,
             int j, last_candidate[2];
             for (j = elementStart + 1; j + m - 1 < elementEnd; j += min(last_candidate[0], last_candidate[1]))
             {
-                D2[0] = 0;
-                D2[1] = 0;
-                last_candidate[0] = m;
-                last_candidate[1] = m;
-                D[0] = ~0;
-                D[1] = ~0;
-                DEBUG_PRINT("    BNDM j=%d, D2[0]=%x, D2[1]=%x, last_candidate[0]=%d, last_candidate[1]=%d, text=%.*s\n",
+                D2[0] = D2[1] = 0;
+                last_candidate[0] = last_candidate[1] = m;
+                D[0] = D[1] = ~0;
+                DEBUG_PRINT("    BNDM j=%d, D2[0]=0x%x, D2[1]=0x%x, last_candidate[0]=%d, last_candidate[1]=%d, text=%.*s\n",
                             j, D2[0], D2[1], last_candidate[0], last_candidate[1], (int)m, text+j);
                 for (int i = m -1; i >= 0 && (D[0] != 0 || D[1] != 0); --i) {
                     char curr_symbol = text[j + i];
@@ -159,15 +151,15 @@ int bndm_eds_iupac_search(const unsigned char* text,
 
                     if ((D[0] & F) != 0 && i > 0) {
                         last_candidate[0] = i;
-                        D2[0] |= R[0][last_candidate[0]];
-                        DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[0]=%d, R[0][last_candidate[0]=%x, D2[0]=%x\n",
-                                    j, i, curr_symbol, last_candidate[0], R[0][last_candidate[0]], D2[0]);
+                        D2[0] |= 1 << (m - 1 - i);
+                        DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[0]=%d, D2[0]=0x%x\n",
+                                    j, i, curr_symbol, last_candidate[0], D2[0]);
                     }
                     if ((D[1] & F) != 0 && i > 0) {
                         last_candidate[1] = i;
-                        D2[1] |= R[1][last_candidate[1]];
-                        DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[1]=%d, R[1][last_candidate[1]=%x, D2[1]=%x\n",
-                                    j, i, curr_symbol, last_candidate[1], R[1][last_candidate[1]], D2[1]);
+                        D2[1] |= 1 << (m - 1 - i);
+                        DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[1]=%d, D2[1]=0x%x\n",
+                                    j, i, curr_symbol, last_candidate[1], D2[1]);
                     }
                     if (((D[0] | D[1]) & F) != 0 && i == 0){
                         matches++;
@@ -181,20 +173,20 @@ int bndm_eds_iupac_search(const unsigned char* text,
                     D[0] = (D[0] | DC[0]) << 1;
                     D[1] = (D[1] | DC[1]) << 1;
                 }
-                DEBUG_PRINT("    BNDM last=%d\n", min(last_candidate[0], last_candidate[1]));
+                DEBUG_PRINT("    BNDM last=%d, m=%lu\n", min(last_candidate[0], last_candidate[1]), m);
             }
 
             // Perform SA search at the end of the element.
             D[0] = D2[0]; // Setting the initial value to SA register.
             D[1] = D2[1]; // Setting the initial value to SA register.
             DEBUG_PRINT("  BNDM->SA2 j=%d, D2[0]=0x%x, D2[1]=0x%x\n", j, D2[0], D2[1]);
-            for(j += m - min(last_candidate[0], last_candidate[1]); j < elementEnd; j++) {
+            for(j = j + m - min(last_candidate[0], last_candidate[1]); j < elementEnd; j++) {
                 char curr_symbol = text[j];
                 DC[0] = D[1] & STATE_VECTOR_MERGE_MASK;
                 DC[1] = D[0] & STATE_VECTOR_MERGE_MASK;
                 D[0] = (((D[0] | DC[0]) << 1) | 1) & S[0][curr_symbol];
                 D[1] = (((D[1] | DC[1]) << 1) | 1) & S[1][curr_symbol];
-                DEBUG_PRINT("    SA2 j=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, curr_symbol, D[1], D[2]);
+                DEBUG_PRINT("    SA2 j=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, curr_symbol, D[0], D[1]);
             }
 
             // Merge the SA registers of individual elements into a cumulative register for the whole segment
