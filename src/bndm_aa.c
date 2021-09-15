@@ -130,14 +130,14 @@ int bndm_eds_iupac_search(const unsigned char* text,
             }
 
             // Perform BNDM search.
-            int j, last_candidate[2];
-            for (j = elementStart + 1; j + m - 1 < elementEnd; j += min(last_candidate[0], last_candidate[1]))
+            int j, last;
+            for (j = elementStart + 1; j + m - 1 < elementEnd; j += last)
             {
                 D2[0] = D2[1] = 0;
-                last_candidate[0] = last_candidate[1] = m;
                 D[0] = D[1] = ~0;
-                DEBUG_PRINT("    BNDM j=%d, D2[0]=0x%x, D2[1]=0x%x, last_candidate[0]=%d, last_candidate[1]=%d, text=%.*s\n",
-                            j, D2[0], D2[1], last_candidate[0], last_candidate[1], (int)m, text+j);
+                last = m;
+                DEBUG_PRINT("    BNDM j=%d, D2[0]=0x%x, D2[1]=0x%x, last=%d, text=%.*s\n",
+                            j, D2[0], D2[1], last, (int)m, text+j);
                 for (int i = m -1; i >= 0 && (D[0] != 0 || D[1] != 0); --i) {
                     char curr_symbol = text[j + i];
                     D[0] = D[0] & B[0][curr_symbol];
@@ -150,16 +150,16 @@ int bndm_eds_iupac_search(const unsigned char* text,
                                 B[1][curr_symbol], D[1] | DC[1]);
 
                     if ((D[0] & F) != 0 && i > 0) {
-                        last_candidate[0] = i;
+                        last = i;
                         D2[0] |= 1 << (m - 1 - i);
-                        DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[0]=%d, D2[0]=0x%x\n",
-                                    j, i, curr_symbol, last_candidate[0], D2[0]);
+                        DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last=%d, D2[0]=0x%x\n",
+                                    j, i, curr_symbol, last, D2[0]);
                     }
                     if ((D[1] & F) != 0 && i > 0) {
-                        last_candidate[1] = i;
+                        last = i;
                         D2[1] |= 1 << (m - 1 - i);
-                        DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last_candidate[1]=%d, D2[1]=0x%x\n",
-                                    j, i, curr_symbol, last_candidate[1], D2[1]);
+                        DEBUG_PRINT("        BNDM Prefix: j=%d, i=%d, curr_symbol=%c, last=%d, D2[1]=0x%x\n",
+                                    j, i, curr_symbol, last, D2[1]);
                     }
                     if (((D[0] | D[1]) & F) != 0 && i == 0){
                         matches++;
@@ -173,14 +173,14 @@ int bndm_eds_iupac_search(const unsigned char* text,
                     D[0] = (D[0] | DC[0]) << 1;
                     D[1] = (D[1] | DC[1]) << 1;
                 }
-                DEBUG_PRINT("    BNDM last=%d, m=%lu\n", min(last_candidate[0], last_candidate[1]), m);
+                DEBUG_PRINT("    BNDM last=%d, m=%lu\n", last, m);
             }
 
             // Perform SA search at the end of the element.
             D[0] = D2[0]; // Setting the initial value to SA register.
             D[1] = D2[1]; // Setting the initial value to SA register.
             DEBUG_PRINT("  BNDM->SA2 j=%d, D2[0]=0x%x, D2[1]=0x%x\n", j, D2[0], D2[1]);
-            for(j = j + m - min(last_candidate[0], last_candidate[1]); j < elementEnd; j++) {
+            for(j = j + m - last; j < elementEnd; j++) {
                 char curr_symbol = text[j];
                 DC[0] = D[1] & STATE_VECTOR_MERGE_MASK;
                 DC[1] = D[0] & STATE_VECTOR_MERGE_MASK;
