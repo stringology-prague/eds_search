@@ -90,38 +90,18 @@ int main(int argc, char * argv[])
 
 BNDM_EDS_AA:;
 
-//    if (*pattern0 == 0) {
-//        fprintf(stderr, "BNDM-EDS-MP requires for AA pattern to be specified as argument!");
-//        free(pattern0);
-//        free(pattern1);
-//        return 1;
-//    }
-//    int num_dna_patterns = translate_aa_pattern(pattern0, pattLen, patterns, MAX_DNA_PATTERNS, MAX_PATTERN_LENGTH);
-//    free(pattern0);
-//    free(pattern1);
-//    int dna_pattern_length = pattLen * 3;
-//    if (num_dna_patterns == 0){
-//        fprintf(stderr, "BNDM-EDS-MP failed to generate any DNA patterns!");
-//        return 1;
-//    }
-//
-//    pattern0 = patterns[0];
-//    if (num_dna_patterns == 2){
-//        pattern1 = patterns[1];
-//    } else {
-//        pattern1 = patterns[0];
-//    }
-
-    // TODO remove - temporary for testing
-    if (*pattern0 == 0 || *pattern1 == 0) {
-        fprintf(stderr, "BNDM-EDS-AA requires two patterns consisting of IUPAC degenerate base symbols to be specified as argument!");
+    if (*pattern0 == 0) {
+        fprintf(stderr, "BNDM-EDS-AA requires AA pattern to be specified as an argument!");
         free(pattern0);
         free(pattern1);
         return 1;
     }
-
-    printf("BNDM-EDS-AA Pattern0: %s\n", pattern0);
-    printf("BNDM-EDS-AA Pattern1: %s\n", pattern1);
+    if (strnlen((const char *)pattern0, MAX_AA_PATTERN_LENGTH + 1) > MAX_AA_PATTERN_LENGTH){
+        fprintf(stderr, "BNDM-EDS-AA requires AA pattern of maximum length %lu!", MAX_AA_PATTERN_LENGTH);
+        free(pattern0);
+        free(pattern1);
+        return 1;
+    }
 
 	getrusage(RUSAGE_SELF, &ruse);
 	ssec1 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
@@ -130,8 +110,7 @@ BNDM_EDS_AA:;
 
 	for (int i = 0; i < LOOPS; i++)
 	{
-		aPointer = 0;
-		bndm_eds_aa_search(pattern0, pattern1, pattLen);
+        bndm_eds_aa_search(writeBuffer, wbPointer, pattern0, pattLen);
 	}
 
 	getrusage(RUSAGE_SELF, &ruse);
@@ -142,6 +121,8 @@ BNDM_EDS_AA:;
 	printf("System time:\t%f s\n", (ssec2 - ssec1) / (double)1000000);
 	printf("Total time:\t%f s\n", ((usec2 + ssec2) - (usec1 + ssec1)) / (double)1000000);
 
+    free(pattern0);
+    free(pattern1);
 	return 0;
 
 BNDM_EDS_MP:;
@@ -152,7 +133,8 @@ BNDM_EDS_MP:;
         free(pattern1);
         return 1;
     }
-    int num_dna_patterns = translate_aa_pattern(pattern0, pattLen, patterns, MAX_DNA_PATTERNS, MAX_PATTERN_LENGTH);
+    int num_dna_patterns = translate_aa_iupac_all_combinations(pattern0, pattLen, patterns, MAX_DNA_PATTERNS,
+                                                               MAX_PATTERN_LENGTH);
     free(pattern0);
     free(pattern1);
     int dna_pattern_length = pattLen * 3;

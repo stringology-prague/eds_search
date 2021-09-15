@@ -91,11 +91,11 @@ void init_AA_TO_COMPR_IUPAC_SYMBOLS(){
     strncpy((char *)AA_TO_COMPR_IUPAC_SYMBOLS[AA_STOP][1], "TAR", COMPR_IUPAC_LEN);
 }
 
-size_t translate_aa_pattern(const unsigned char *aa_pattern,
-                            const size_t aa_pattern_size,
-                            unsigned char dna_patterns[][MAX_PATTERN_LENGTH],
-                            const size_t max_dna_patterns,
-                            const size_t max_dna_pattern_length)
+size_t translate_aa_iupac_all_combinations(const unsigned char *aa_pattern,
+                                           const size_t aa_pattern_size,
+                                           unsigned char dna_patterns[][MAX_PATTERN_LENGTH],
+                                           const size_t max_dna_patterns,
+                                           const size_t max_dna_pattern_length)
 {
     printf("aa_pattern: \"%1.*s\", aa_pattern_size=%lu, max_dna_patterns=%lu, max_dna_pattern_length=%lu\n", (int)aa_pattern_size, aa_pattern, aa_pattern_size, max_dna_patterns, max_dna_pattern_length);
     if (aa_pattern_size * 3 > max_dna_pattern_length || aa_pattern_size == 0 || aa_pattern == NULL){
@@ -147,4 +147,42 @@ size_t translate_aa_pattern(const unsigned char *aa_pattern,
         printf("dna_patterns[%d]: %1.*s\n", p, (int)aa_pattern_size*3, dna_patterns[p]);
     }
     return active_dna_patterns;
+}
+
+size_t translate_aa_iupac(const unsigned char *aa_pattern,
+                          const size_t aa_pattern_size,
+                          unsigned char dna_patterns[2][MAX_PATTERN_LENGTH])
+{
+    DEBUG_PRINT("TRANSLATE_AA_IUPAC aa_pattern: \"%1.*s\", aa_pattern_size=%lu\n",
+                (int)aa_pattern_size, aa_pattern, aa_pattern_size);
+    if (aa_pattern_size > MAX_AA_PATTERN_LENGTH || aa_pattern_size == 0 || aa_pattern == NULL){
+        return 0;
+    }
+
+    memset(dna_patterns[0], 0, MAX_PATTERN_LENGTH);
+    memset(dna_patterns[1], 0, MAX_PATTERN_LENGTH);
+
+    for (int i = 0; i < aa_pattern_size; i++){
+        // Expand AA symbol to IUPAC into the first pattern
+        dna_patterns[0][3*i+0] = AA_TO_COMPR_IUPAC_SYMBOLS[aa_pattern[i]][0][0];
+        dna_patterns[0][3*i+1] = AA_TO_COMPR_IUPAC_SYMBOLS[aa_pattern[i]][0][1];
+        dna_patterns[0][3*i+2] = AA_TO_COMPR_IUPAC_SYMBOLS[aa_pattern[i]][0][2];
+
+        // Check if this is AA symbol that codes into multiple disjoint DNA sequences
+        if (AA_TO_COMPR_IUPAC_SYMBOLS[aa_pattern[i]][1][0] != 0){
+            // Fill in second pattern with the second IUPAC codon
+            dna_patterns[1][3*i+0] = AA_TO_COMPR_IUPAC_SYMBOLS[aa_pattern[i]][1][0];
+            dna_patterns[1][3*i+1] = AA_TO_COMPR_IUPAC_SYMBOLS[aa_pattern[i]][1][1];
+            dna_patterns[1][3*i+2] = AA_TO_COMPR_IUPAC_SYMBOLS[aa_pattern[i]][1][2];
+
+        } else {
+            // Fill in second pattern with the only IUPAC codon
+            dna_patterns[1][3*i+0] = dna_patterns[0][3*i+0];
+            dna_patterns[1][3*i+1] = dna_patterns[0][3*i+1];
+            dna_patterns[1][3*i+2] = dna_patterns[0][3*i+2];
+        }
+    }
+    DEBUG_PRINT("  dna_patterns[0]: %1.*s\n", (int)aa_pattern_size*3, dna_patterns[0]);
+    DEBUG_PRINT("  dna_patterns[1]: %1.*s\n", (int)aa_pattern_size*3, dna_patterns[1]);
+    return 2;
 }

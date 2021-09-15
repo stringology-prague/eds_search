@@ -1,13 +1,45 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
+#include "bndm_aa.h"
 #include "globals.h"
 #include "functions.h"
 #include "protein_table.h"
 
-int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigned int m) {
+
+int bndm_eds_aa_search(const unsigned char* text,
+                       const size_t len,
+                       const unsigned char *pattern,
+                       const size_t m)
+{
+    assert(m <= MAX_AA_PATTERN_LENGTH);
+
+    DEBUG_PRINT("BNDM-EDS-AA len=%lu, pattern=%.*s, m=%lu", len, (int)m, pattern, m);
+
+    unsigned char patterns[2][MAX_PATTERN_LENGTH];
+    if (translate_aa_iupac(pattern, m, patterns) == 0){
+        fprintf(stderr, "BNDM-EDS-AA failed to generate any DNA patterns!");
+        return -1;
+    }
+
+    DEBUG_PRINT("  BNDM-EDS-AA Pattern0: %s\n", patterns[0]);
+    DEBUG_PRINT("  BNDM-EDS-AA Pattern1: %s\n", patterns[1]);
+
+    return bndm_eds_iupac_search(text, len, patterns[0], patterns[1], m*3);
+}
+
+int bndm_eds_iupac_search(const unsigned char* text,
+                          const size_t len,
+                          const unsigned char *pattern0,
+                          const unsigned char *pattern1,
+                          const size_t m)
+{
     assert(m % 3 == 0);
+    assert(m <= MAX_PATTERN_LENGTH);
+    assert(strnlen(pattern0, m) == strnlen(pattern1, m));
+
     unsigned int B[2][SIGMA];
     unsigned int S[2][SIGMA];
 
@@ -62,10 +94,10 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
     R1[0] = R2[0] = D2[0] = 0;
     R1[1] = R2[1] = D2[1] = 0;
 
-    while (aPointer < wbPointer)
+    while (aPointer < len)
     {
         //Processing the beginning of a segment
-        elementNum = (unsigned char)writeBuffer[aPointer++];
+        elementNum = (unsigned char)text[aPointer++];
         segmentCounter++;
         elementCounter += elementNum;
         R1[0] = R2[0];
@@ -89,7 +121,7 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
             D[0] = R1[0];
             D[1] = R1[1];
             while (j < (elementStart + m) && j < elementEnd) {
-                char curr_symbol = writeBuffer[j];
+                char curr_symbol = text[j];
                 DC[0] = D[1] & STATE_VECTOR_MERGE_MASK;
                 DC[1] = D[0] & STATE_VECTOR_MERGE_MASK;
                 D[0] = (((D[0] | DC[0]) << 1) | 1) & S[0][curr_symbol];
@@ -98,9 +130,9 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
 
                 if (D[0] & F | D[1] & F) {
                     matches++;
-                    DEBUG_PRINT("      MATCH (p0): j=%d, c=%c, D[0]=0x%x, S=0x%x, elementStart=%d, m=%d, R1=0x%x\n",
+                    DEBUG_PRINT("      MATCH (p0): j=%d, c=%c, D[0]=0x%x, S=0x%x, elementStart=%d, m=%lu, R1=0x%x\n",
                                 j, curr_symbol, D[0], S[0][curr_symbol], elementStart, m, R1[0]);
-                    DEBUG_PRINT("      MATCH (p1): j=%d, c=%c, D[1]=0x%x, S=0x%x, elementStart=%d, m=%d, R1=0x%x\n",
+                    DEBUG_PRINT("      MATCH (p1): j=%d, c=%c, D[1]=0x%x, S=0x%x, elementStart=%d, m=%lu, R1=0x%x\n",
                                 j, curr_symbol, D[1], S[1][curr_symbol], elementStart, m, R1[1]);
                 }
                 j++;
@@ -119,13 +151,13 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
                 D[0] = ~0;
                 D[1] = ~0;
                 DEBUG_PRINT("    BNDM j=%d, i=%d, j+i=%d, D2[0]=%x, D2[1]=%x, last_candidate[0]=%d, last_candidate[1]=%d, text=%.*s\n",
-                            j, i, j+i, D2[0], D2[1], last_candidate[0], last_candidate[1], m,writeBuffer+j);
+                            j, i, j+i, D2[0], D2[1], last_candidate[0], last_candidate[1], (int)m, text+j);
                 for (i = m -1; i >= 0 && (D[0] != 0 || D[1] != 0); --i) {
-                    char curr_symbol = writeBuffer[j + i];
+                    char curr_symbol = text[j + i];
                     D[0] = D[0] & B[0][curr_symbol];
                     D[1] = D[1] & B[1][curr_symbol];
 
-                    DEBUG_PRINT("      BNDM j=%d, i=%d, j+i=%d, curr_symbol=%c, (m-1-i)mod3=%d, "
+                    DEBUG_PRINT("      BNDM j=%d, i=%d, j+i=%d, curr_symbol=%c, (m-1-i)mod3=%lu, "
                                 "D[0]=0x%x, DC[0]=0x%x,B[0][curr_symbol]=0x%x, "
                                 "D[1]=0x%x, DC[1]=0x%x, B[1][curr_symbol]=0x%x, D[1] | DC[1] = %x\n",
                                 j, i, j+i,curr_symbol, (m - 1 - i) % 3, D[0], DC[0], B[0][curr_symbol], D[1], DC[1],
@@ -160,13 +192,13 @@ int bndm_eds_aa_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
             }
             //Perform SA search at the end of the element.
             DEBUG_PRINT("  BNDM->SA2 j=%d, jnext=%d, D2[0]=0x%x, D2[1]=0x%x\n",
-                        j, j + m - min(last_candidate[0], last_candidate[1]), D2[0], D2[1]);
+                        j, j + (int)m - min(last_candidate[0], last_candidate[1]), D2[0], D2[1]);
             j += m - min(last_candidate[0], last_candidate[1]); //Moving j pointer to the initial position for SA.
             D[0] = D2[0]; //Setting the initial value to SA register.
             D[1] = D2[1]; //Setting the initial value to SA register.
 
             while(j < elementEnd) {
-                char curr_symbol = writeBuffer[j];
+                char curr_symbol = text[j];
                 DC[0] = D[1] & STATE_VECTOR_MERGE_MASK;
                 DC[1] = D[0] & STATE_VECTOR_MERGE_MASK;
                 D[0] = (((D[0] | DC[0]) << 1) | 1) & S[0][curr_symbol];
