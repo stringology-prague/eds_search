@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 /**
  * BNDM-EDS matching function that accepts a string of amino acids as a <pattern> and performs exact search on an
  * elastic degenerate string <text> of DNA symbols.
@@ -42,3 +44,6 @@ int bndm_eds_iupac_search(const unsigned char* text,
                           const unsigned char *pattern0,
                           const unsigned char *pattern1,
                           const size_t m);
+
+
+int bndm_eds_aa_run(const unsigned char *pattern, const size_t m, const int loops);

@@ -3,8 +3,45 @@
 #include <time.h>
 #include <string.h>
 #include <sys/resource.h>
+
 #include "globals.h"
 #include "functions.h"
+
+#include "sa.h"
+
+int SA_run(const unsigned char *pattern, const size_t m, const int loops)
+{
+    struct rusage ruse, ruse1, ruse2;
+    double ssec1, ssec2, usec1, usec2;
+    int matches;
+    unsigned char rand_pattern[MAX_PATTERN_LENGTH];
+    memcpy(rand_pattern, pattern, m);
+
+    getrusage(RUSAGE_SELF, &ruse);
+    ssec1 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
+    usec1 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);
+    getrusage(RUSAGE_SELF, &ruse1);
+
+    for (int i = 0; i < loops; i++)
+    {
+        if (m == 0){
+            randomSelectPattern(rand_pattern, m, readBuffer, fSize);
+        }
+        printf("Pattern: %s\n", rand_pattern);
+        aPointer = 0;
+        matches = SA_search(rand_pattern, m);
+    }
+
+    getrusage(RUSAGE_SELF, &ruse);
+    ssec2 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
+    usec2 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);
+
+    printf("User time:\t%f s\n", (usec2 - usec1) / (double)1000000);
+    printf("System time:\t%f s\n", (ssec2 - ssec1) / (double)1000000);
+    printf("Total time:\t%f s\n", ((usec2 + ssec2) - (usec1 + ssec1)) / (double)1000000);
+
+    return matches;
+}
 
 int SA_search(unsigned char *x, unsigned int m) {
 	unsigned int S[SIGMA];

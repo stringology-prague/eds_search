@@ -3,8 +3,8 @@
 #define BASES 4
 #define COMPR_IUPAC_MAX_VARIATIONS 2
 #define COMPR_IUPAC_LEN 3
-#define AA_START 0x00
-#define AA_STOP 0xFF
+#define AA_START '0'
+#define AA_STOP '1'
 
 extern unsigned char IUPAC_SYMBOLS_TO_BASES[SIGMA][BASES];
 void init_IUPAC_SYMBOLS_TO_BASES();

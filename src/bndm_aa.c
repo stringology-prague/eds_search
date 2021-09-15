@@ -2,12 +2,50 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/resource.h>
 
-#include "bndm_aa.h"
 #include "globals.h"
 #include "functions.h"
 #include "protein_table.h"
 
+#include "bndm_aa.h"
+
+int bndm_eds_aa_run(const unsigned char *pattern, const size_t m, const int loops)
+{
+    struct rusage ruse, ruse1, ruse2;
+    double ssec1, ssec2, usec1, usec2;
+    int matches;
+
+    if (m == 0) {
+        fprintf(stderr, "BNDM-EDS-AA requires AA pattern to be specified as an argument!");
+        return -1;
+    }
+    if (m > MAX_AA_PATTERN_LENGTH){
+        fprintf(stderr, "BNDM-EDS-AA requires AA pattern of maximum length %lu!", MAX_AA_PATTERN_LENGTH);
+        return -1;
+    }
+
+    getrusage(RUSAGE_SELF, &ruse);
+    ssec1 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
+    usec1 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);
+    getrusage(RUSAGE_SELF, &ruse1);
+
+    for (int i = 0; i < loops; i++)
+    {
+        aPointer = 0;
+        matches = bndm_eds_aa_search(writeBuffer, wbPointer, pattern, m);
+    }
+
+    getrusage(RUSAGE_SELF, &ruse);
+    ssec2 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
+    usec2 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);
+
+    printf("User time:\t%f s\n", (usec2 - usec1) / (double)1000000);
+    printf("System time:\t%f s\n", (ssec2 - ssec1) / (double)1000000);
+    printf("Total time:\t%f s\n", ((usec2 + ssec2) - (usec1 + ssec1)) / (double)1000000);
+
+    return matches;
+}
 
 int bndm_eds_aa_search(const unsigned char* text,
                        const size_t len,
@@ -18,16 +56,16 @@ int bndm_eds_aa_search(const unsigned char* text,
 
     DEBUG_PRINT("BNDM-EDS-AA len=%lu, pattern=%.*s, m=%lu\n", len, (int)m, pattern, m);
 
-    unsigned char patterns[2][MAX_PATTERN_LENGTH];
-    if (translate_aa_iupac(pattern, m, patterns) == 0){
-        fprintf(stderr, "BNDM-EDS-AA failed to generate any DNA patterns!\n");
+    unsigned char IUPAC_patterns[2][MAX_PATTERN_LENGTH];
+    if (translate_aa_iupac(pattern, m, IUPAC_patterns) == 0){
+        fprintf(stderr, "BNDM-EDS-AA failed to generate IUPAC patterns!\n");
         return -1;
     }
 
-    DEBUG_PRINT("  BNDM-EDS-AA Pattern0: %s\n", patterns[0]);
-    DEBUG_PRINT("  BNDM-EDS-AA Pattern1: %s\n", patterns[1]);
+    DEBUG_PRINT("  BNDM-EDS-AA IUPAC Pattern 0: %s\n", IUPAC_patterns[0]);
+    DEBUG_PRINT("  BNDM-EDS-AA IUPAC Pattern 1: %s\n", IUPAC_patterns[1]);
 
-    return bndm_eds_iupac_search(text, len, patterns[0], patterns[1], m*3);
+    return bndm_eds_iupac_search(text, len, IUPAC_patterns[0], IUPAC_patterns[1], m*3);
 }
 
 int bndm_eds_iupac_search(const unsigned char* text,

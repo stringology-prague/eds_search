@@ -2,6 +2,7 @@
 #define SIGMA 256
 #define MAX_PATTERN_LENGTH (sizeof(int) * 8)
 #define MAX_AA_PATTERN_LENGTH ((sizeof(int) * 8) / 3)
+#define MAX_DNA_PATTERNS (2)
 
 //Byte encoder limits for single codeword lengths
 #define ENC_1B 200
