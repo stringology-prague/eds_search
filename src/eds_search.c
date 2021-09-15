@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/resource.h>
+#include <time.h>
+
 #include "globals.h"
 #include "functions.h"
 #include "bndm.h"
@@ -12,7 +13,6 @@
 #include "sa.h"
 #include "translator.h"
 #include "protein_table.h"
-
 
 //Globals
 unsigned char* readBuffer;
@@ -31,7 +31,7 @@ int main(int argc, char * argv[])
 
 	int LOOPS = atoi(argv[2]);
 	size_t pattLen = (unsigned int)atoi(argv[3]), patt2Len = 0;
-	unsigned char algorithm = (unsigned char)atoi(argv[4]);
+	const char *algorithm = argv[4];
     unsigned char patterns[MAX_DNA_PATTERNS][MAX_PATTERN_LENGTH+1];
     memset(patterns, 0, MAX_DNA_PATTERNS * (MAX_PATTERN_LENGTH + 1));
 
@@ -45,7 +45,7 @@ int main(int argc, char * argv[])
     }
     if (pattLen && patt2Len && pattLen != patt2Len) {
         fprintf(stderr, "Two patterns supplied, but length is not matching!");
-        exit(1);
+        return EXIT_FAILURE;
     }
 
 	readInputFile(argv[1], &readBuffer, &fSize);
@@ -57,31 +57,24 @@ int main(int argc, char * argv[])
     init_IUPAC_SYMBOLS_TO_BASES();
     init_AA_TO_COMPR_IUPAC_SYMBOLS();
 
-//	srand(time(NULL));
-    srand(123);
+	srand(time(NULL));
+//    srand(123);
 
-	switch (algorithm) {
-
-	case 1:
+    if (strcasecmp(algorithm, "sa") == 0) {
         SA_run(patterns[0], pattLen, LOOPS);
-		break;
-
-	case 2:
+    }
+    else if (strcasecmp(algorithm, "bndm") == 0) {
         bndm_eds_run(patterns[0], pattLen, LOOPS);
-		break;
-
-	case 3:
+    }
+    else if (strcasecmp(algorithm, "bndm-mp") == 0) {
         bndm_eds_mp_run(patterns[0], pattLen, LOOPS);
-		break;
-
-	case 4:
+    }
+    else if (strcasecmp(algorithm, "bndm-aa") == 0) {
         bndm_eds_aa_run(patterns[0], pattLen, LOOPS);
-		break;
-
-	default:
-		fprintf(stderr,"Invalid algorithm option!\n");
-		return EXIT_FAILURE;
-	}
-
-	return 0;
+    }
+    else {
+        fprintf(stderr, "Invalid algorithm option!\n");
+        return EXIT_FAILURE;
+    }
+	return EXIT_SUCCESS;
 }
