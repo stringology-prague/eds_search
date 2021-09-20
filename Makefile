@@ -5,10 +5,10 @@ CC = gcc
 #override CFLAGS += -O0 -DDEBUG -ggdb
 
 # Max performance flags
-#override CFLAGS += -DNDEBUG -O3
+override CFLAGS += -DNDEBUG -O3
 
 # Profiling flags
-override CFLAGS += -O0 -fprofile-arcs -ftest-coverage -DNDEBUG
+#override CFLAGS += -O0 -fprofile-arcs -ftest-coverage -DNDEBUG
 
 all:	eds_search clean0
 
