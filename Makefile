@@ -1,7 +1,14 @@
 SRC = ./src
 CC = gcc
-override CFLAGS += -DNDEBUG -O3 -mavx -msse2
-#override CFLAGS += -O0 -DDEBUG -ggdb -mavx -msse2
+
+# Debugging flags
+#override CFLAGS += -O0 -DDEBUG -ggdb
+
+# Max performance flags
+#override CFLAGS += -DNDEBUG -O3
+
+# Profiling flags
+override CFLAGS += -O0 -fprofile-arcs -ftest-coverage -DNDEBUG
 
 all:	eds_search clean0
 
