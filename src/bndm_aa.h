@@ -21,7 +21,7 @@
  * @param m length of pattern, maximum length is 10 for 32bit architectures, or 21 for 64bit architectures
  * @return number of matches
  */
-int bndm_eds_aa_search(const unsigned char* text,
+int bndm_eds_aa_search(const unsigned char *text,
                        const size_t len,
                        const unsigned char *pattern,
                        const size_t m);
@@ -39,11 +39,10 @@ int bndm_eds_aa_search(const unsigned char* text,
  * @param m length of pattern, maximum length is 10 for 32bit architectures, or 21 for 64bit architectures
  * @return number of matches
  */
-int bndm_eds_iupac_search(const unsigned char* text,
+int bndm_eds_iupac_search(const unsigned char *text,
                           const size_t len,
                           const unsigned char *pattern0,
                           const unsigned char *pattern1,
                           const size_t m);
-
 
 int bndm_eds_aa_run(const unsigned char *pattern, const size_t m, const int loops);

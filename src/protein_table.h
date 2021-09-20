@@ -7,9 +7,11 @@
 #define AA_STOP '1'
 
 extern unsigned char IUPAC_SYMBOLS_TO_BASES[SIGMA][BASES];
+
 void init_IUPAC_SYMBOLS_TO_BASES();
 
 extern unsigned char AA_TO_COMPR_IUPAC_SYMBOLS[SIGMA][COMPR_IUPAC_MAX_VARIATIONS][COMPR_IUPAC_LEN];
+
 void init_AA_TO_COMPR_IUPAC_SYMBOLS();
 
 size_t translate_aa_iupac_all_combinations(const unsigned char *aa_pattern,

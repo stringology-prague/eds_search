@@ -15,11 +15,11 @@
 #define DEC_3B 250
 
 //Globals
-extern unsigned char* readBuffer;
+extern unsigned char *readBuffer;
 extern unsigned int fSize;
 extern unsigned int rbPointer;
 
-extern unsigned char* writeBuffer;
+extern unsigned char *writeBuffer;
 extern unsigned int wbPointer;
 extern unsigned int aPointer;
 
