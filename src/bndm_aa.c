@@ -12,7 +12,7 @@
 
 int bndm_eds_aa_run(const unsigned char *pattern0,
                     const unsigned char *pattern1,
-                    const size_t m,
+                    size_t m,
                     const int loops) {
     struct rusage ruse, ruse1;
     double ssec1, ssec2, usec1, usec2;
@@ -35,6 +35,22 @@ int bndm_eds_aa_run(const unsigned char *pattern0,
         return -1;
     }
 
+    unsigned char IUPAC_patterns[2][MAX_PATTERN_LENGTH];
+    if (pattern1_len) {
+        printf("BNDM-EDS-AA (dual IUPAC pattern - supplied as arguments)\n");
+        strncpy((unsigned char *) IUPAC_patterns[0], pattern0, m);
+        strncpy((unsigned char *) IUPAC_patterns[1], pattern1, m);
+    } else {
+        if (translate_aa_iupac(pattern0, m, IUPAC_patterns)==0) {
+            fprintf(stderr, "BNDM-EDS-AA failed to generate IUPAC patterns!\n");
+            return -1;
+        }
+        printf("BNDM-EDS-AA (dual IUPAC pattern - generated from AA argument)\n");
+        m = 3*m;
+    }
+    printf("Pattern0:\t\"%.*s\"\n", (int) m, IUPAC_patterns[0]);
+    printf("Pattern1:\t\"%.*s\"\n", (int) m, IUPAC_patterns[1]);
+
     getrusage(RUSAGE_SELF, &ruse);
     ssec1 = (double) (ruse.ru_stime.tv_sec*1000000 + ruse.ru_stime.tv_usec);
     usec1 = (double) (ruse.ru_utime.tv_sec*1000000 + ruse.ru_utime.tv_usec);
@@ -42,17 +58,14 @@ int bndm_eds_aa_run(const unsigned char *pattern0,
 
     for (int i = 0; i < loops; i++) {
         aPointer = 0;
-        if (pattern1_len) {
-            matches = bndm_eds_iupac_search(writeBuffer, wbPointer, pattern0, pattern1, m);
-        } else {
-            matches = bndm_eds_aa_search(writeBuffer, wbPointer, pattern0, m);
-        }
+        matches = bndm_eds_iupac_search(writeBuffer, wbPointer, IUPAC_patterns[0], IUPAC_patterns[1], m);
     }
 
     getrusage(RUSAGE_SELF, &ruse);
     ssec2 = (double) (ruse.ru_stime.tv_sec*1000000 + ruse.ru_stime.tv_usec);
     usec2 = (double) (ruse.ru_utime.tv_sec*1000000 + ruse.ru_utime.tv_usec);
 
+    printf("Matches:\t%d\n", matches);
     printf("User time:\t%f s\n", (usec2 - usec1)/(double) 1000000);
     printf("System time:\t%f s\n", (ssec2 - ssec1)/(double) 1000000);
     printf("Total time:\t%f s\n", ((usec2 + ssec2) - (usec1 + ssec1))/(double) 1000000);
@@ -89,7 +102,8 @@ int bndm_eds_iupac_search(const unsigned char *text,
     DEBUG_PRINT("  BNDM-EDS-AA IUPAC Pattern 0: %.*s\n", (int) m, pattern0);
     DEBUG_PRINT("                    Pattern 1: %.*s\n", (int) m, pattern1);
 
-    int S0[SIGMA], S1[SIGMA], B0[SIGMA], B1[SIGMA]; // Preprocessed matching vectors for both patterns, S for ShiftAND, B for BNDM
+    int S0[SIGMA], S1[SIGMA], B0[SIGMA],
+        B1[SIGMA]; // Preprocessed matching vectors for both patterns, S for ShiftAND, B for BNDM
     // int R[MAX_PATTERN_LENGTH];
     int F; // Preprocessed masking vector to verify full matches or prefix matches from matching vectors D[*]
 
@@ -246,7 +260,7 @@ int bndm_eds_iupac_search(const unsigned char *text,
         }
     }
 
-//    printf("BNDM-EDS-AA Matches=%d, segments=%d, elements=%d\n", matches, segmentCounter, elementCounter);
+    DEBUG_PRINT("BNDM-EDS-AA Matches=%d, segments=%d, elements=%d\n", matches, segmentCounter, elementCounter);
 
     return matches;
 }

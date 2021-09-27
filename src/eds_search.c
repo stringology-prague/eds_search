@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
         strncpy(patterns[1], argv[6], pattLen);
     }
     if (pattLen && patt2Len && pattLen!=patt2Len) {
-        fprintf(stderr, "Two patterns supplied, but length is not matching!");
+        fprintf(stderr, "Two patterns supplied, but length is not matching!\n");
         return EXIT_FAILURE;
     }
 

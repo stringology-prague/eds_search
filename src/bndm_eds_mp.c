@@ -17,21 +17,22 @@ int bndm_eds_mp_run(const unsigned char *pattern,
     int matches;
 
     if (m==0) {
-        fprintf(stderr, "BNDM-EDS-MP requires for AA pattern to be specified as argument!");
+        fprintf(stderr, "BNDM-EDS-MP requires for AA pattern to be specified as argument!\n");
         return 1;
     }
     unsigned char IUPAC_patterns[MAX_DNA_PATTERNS][MAX_PATTERN_LENGTH];
     int num_dna_patterns = translate_aa_iupac_all_combinations(pattern, m, IUPAC_patterns,
                                                                MAX_DNA_PATTERNS, MAX_PATTERN_LENGTH);
     if (num_dna_patterns==0) {
-        fprintf(stderr, "BNDM-EDS-MP failed to generate any DNA patterns!");
+        fprintf(stderr, "BNDM-EDS-MP failed to generate any DNA patterns!\n");
         return 1;
     } else if (num_dna_patterns==1) {
         memcpy(IUPAC_patterns[1], IUPAC_patterns[1], MAX_PATTERN_LENGTH);
     }
 
-    printf("BNDM-EDS-MP IUPAC Pattern 0: %s\n", IUPAC_patterns[0]);
-    printf("BNDM-EDS-MP IUPAC Pattern 1: %s\n", IUPAC_patterns[1]);
+    printf("BNDM-EDS-MP (Multi-Patterns generated from AA)\n");
+    printf("Pattern0:\t%.*s\n", (int)m*3, IUPAC_patterns[0]);
+    printf("Pattern1:\t%.*s\n", (int)m*3, IUPAC_patterns[1]);
 
     getrusage(RUSAGE_SELF, &ruse);
     ssec1 = (double) (ruse.ru_stime.tv_sec*1000000 + ruse.ru_stime.tv_usec);
@@ -47,6 +48,8 @@ int bndm_eds_mp_run(const unsigned char *pattern,
     ssec2 = (double) (ruse.ru_stime.tv_sec*1000000 + ruse.ru_stime.tv_usec);
     usec2 = (double) (ruse.ru_utime.tv_sec*1000000 + ruse.ru_utime.tv_usec);
 
+
+    printf("Matches:\t%d\n", matches);
     printf("User time:\t%f s\n", (usec2 - usec1)/(double) 1000000);
     printf("System time:\t%f s\n", (ssec2 - ssec1)/(double) 1000000);
     printf("Total time:\t%f s\n", ((usec2 + ssec2) - (usec1 + ssec1))/(double) 1000000);
@@ -133,9 +136,8 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
 
                 if (D[0] & F) {
                     count++;
-                    DEBUG_PRINT("      ");
-                    printf(
-                        "SA HIT (pattern0): j = %d, c = %c, D[0] = 0x%x, S = 0x%x, elementStart = %d, m = %d, R1 = 0x%x\n",
+                    DEBUG_PRINT(
+                        "      SA HIT (pattern0): j = %d, c = %c, D[0] = 0x%x, S = 0x%x, elementStart = %d, m = %d, R1 = 0x%x\n",
                         j,
                         curr_symbol,
                         D[0],
@@ -146,9 +148,8 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
                 }
                 if (D[1] & F) {
                     count++;
-                    DEBUG_PRINT("      ");
-                    printf(
-                        "SA HIT (pattern1): j = %d, c = %c, D[1] = 0x%x, S = 0x%x, elementStart = %d, m = %d, R1 = 0x%x\n",
+                    DEBUG_PRINT(
+                        "      SA HIT (pattern1): j = %d, c = %c, D[1] = 0x%x, S = 0x%x, elementStart = %d, m = %d, R1 = 0x%x\n",
                         j,
                         curr_symbol,
                         D[1],
@@ -194,8 +195,7 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
                             D2[0] |= R[0][last_candidate[0]];
                         } else { // Match
                             count++;
-                            DEBUG_PRINT("        ");
-                            printf("BNDM HIT (pattern0): j = %d, i = %d, c = %c, D = 0x%x, B = 0x%x\n",
+                            DEBUG_PRINT("        BNDM HIT (pattern0): j = %d, i = %d, c = %c, D = 0x%x, B = 0x%x\n",
                                    j,
                                    i,
                                    curr_symbol,
@@ -209,8 +209,7 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
                             D2[1] |= R[1][last_candidate[1]];
                         } else {
                             count++;
-                            DEBUG_PRINT("        ");
-                            printf("BNDM HIT (pattern1): j = %d, i = %d, c = %c, D = 0x%x, B = 0x%x\n",
+                            DEBUG_PRINT("        BNDM HIT (pattern1): j = %d, i = %d, c = %c, D = 0x%x, B = 0x%x\n",
                                    j,
                                    i,
                                    curr_symbol,
@@ -260,7 +259,7 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
         }
     }
 
-    printf("count = %d, segments = %d, elements = %d\n", count, segmentCounter, elementCounter);
+    DEBUG_PRINT("count = %d, segments = %d, elements = %d\n", count, segmentCounter, elementCounter);
 
     return count;
 }

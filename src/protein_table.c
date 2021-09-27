@@ -96,7 +96,7 @@ size_t translate_aa_iupac_all_combinations(const unsigned char *aa_pattern,
                                            unsigned char dna_patterns[][MAX_PATTERN_LENGTH],
                                            const size_t max_dna_patterns,
                                            const size_t max_dna_pattern_length) {
-    printf("aa_pattern: \"%1.*s\", aa_pattern_size=%lu, max_dna_patterns=%lu, max_dna_pattern_length=%lu\n",
+    DEBUG_PRINT("aa_pattern: \"%1.*s\", aa_pattern_size=%lu, max_dna_patterns=%lu, max_dna_pattern_length=%lu\n",
            (int) aa_pattern_size,
            aa_pattern,
            aa_pattern_size,
@@ -152,7 +152,7 @@ size_t translate_aa_iupac_all_combinations(const unsigned char *aa_pattern,
         }
     }
     for (int p = 0; p < active_dna_patterns; p++) {
-        printf("dna_patterns[%d]: %1.*s\n", p, (int) aa_pattern_size*3, dna_patterns[p]);
+        DEBUG_PRINT("dna_patterns[%d]: %1.*s\n", p, (int) aa_pattern_size*3, dna_patterns[p]);
     }
     return active_dna_patterns;
 }

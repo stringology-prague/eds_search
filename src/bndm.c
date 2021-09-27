@@ -17,6 +17,9 @@ int bndm_eds_run(const unsigned char *pattern, const size_t m, const int loops)
     unsigned char rand_pattern[MAX_PATTERN_LENGTH];
     memcpy(rand_pattern, pattern, m);
 
+    printf("BNDM-EDS\n");
+    printf("Pattern:\t\"%.*s\"\n", (int) m, pattern);
+
     getrusage(RUSAGE_SELF, &ruse);
     ssec1 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
     usec1 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);
@@ -27,7 +30,7 @@ int bndm_eds_run(const unsigned char *pattern, const size_t m, const int loops)
         if (m == 0){
             randomSelectPattern(rand_pattern, m, readBuffer, fSize);
         }
-        printf("Pattern: %.*s\n", (int)m, rand_pattern);
+        DEBUG_PRINT("Pattern: %.*s\n", (int)m, rand_pattern);
         aPointer = 0;
         matches = bndm_search(rand_pattern, m);
     }
@@ -36,6 +39,7 @@ int bndm_eds_run(const unsigned char *pattern, const size_t m, const int loops)
     ssec2 = (double)(ruse.ru_stime.tv_sec * 1000000 + ruse.ru_stime.tv_usec);
     usec2 = (double)(ruse.ru_utime.tv_sec * 1000000 + ruse.ru_utime.tv_usec);
 
+    printf("Matches:\t%d\n", matches);
     printf("User time:\t%f s\n", (usec2 - usec1) / (double)1000000);
     printf("System time:\t%f s\n", (ssec2 - ssec1) / (double)1000000);
     printf("Total time:\t%f s\n", ((usec2 + ssec2) - (usec1 + ssec1)) / (double)1000000);
@@ -103,7 +107,7 @@ int bndm_search(unsigned char *x, unsigned int m) {
 
 				
 
-				if (D & F) { count++; printf("SA HIT: j = %d, c = %c, D = %x, S = %x, elementStart = %d, m = %d, R1 = %x\n", j, writeBuffer[j], D, S[writeBuffer[j]], elementStart, m, R1);}
+				if (D & F) { count++; DEBUG_PRINT("SA HIT: j = %d, c = %c, D = %x, S = %x, elementStart = %d, m = %d, R1 = %x\n", j, writeBuffer[j], D, S[writeBuffer[j]], elementStart, m, R1);}
 				j++;
 			}
 			if (elementLength < m)
@@ -125,7 +129,7 @@ int bndm_search(unsigned char *x, unsigned int m) {
 					i--;
 					if (D != 0  && (D & F) != 0) {
 						if (i >= 0) { last = i + 1; D2 |= R[last]; }
-						else { count++; printf("BNDM HIT: j = %d, i = %d, c = %c, D = %x, B = %x\n", j, i, writeBuffer[j + i], D, B[writeBuffer[j + i]]);}
+						else { count++; DEBUG_PRINT("BNDM HIT: j = %d, i = %d, c = %c, D = %x, B = %x\n", j, i, writeBuffer[j + i], D, B[writeBuffer[j + i]]);}
 					}
 					D <<= 1;
 				}
@@ -142,7 +146,7 @@ int bndm_search(unsigned char *x, unsigned int m) {
 
 
 			if (j >= 6136576 && j <= 6136584)
-				printf("BNDM: j = %d, D = %x, last = %d, elementEnd = %d, D2 = %x, R[last] = %x\n", j, D, last, elementEnd, D2, R[last]);
+                DEBUG_PRINT("BNDM: j = %d, D = %x, last = %d, elementEnd = %d, D2 = %x, R[last] = %x\n", j, D, last, elementEnd, D2, R[last]);
 			
 			while(j < elementEnd) {
 				D = ((D << 1) | 1) & S[writeBuffer[j]];
@@ -151,7 +155,7 @@ int bndm_search(unsigned char *x, unsigned int m) {
 				if (D & F)
 				{
 					count++;//This cannot happen...
-					printf("SA2 HIT: j = %d, D = %x\n",j,D);
+                    DEBUG_PRINT("SA2 HIT: j = %d, D = %x\n",j,D);
 				}
 				j++;
 			}
@@ -164,7 +168,7 @@ int bndm_search(unsigned char *x, unsigned int m) {
 		}
 	}
 
-	printf("count = %d, segments = %d, elements = %d\n", count, segmentCounter, elementCounter);
+    DEBUG_PRINT("count = %d, segments = %d, elements = %d\n", count, segmentCounter, elementCounter);
 
 	return count;
 }
