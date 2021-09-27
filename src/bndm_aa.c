@@ -10,17 +10,28 @@
 
 #include "bndm_aa.h"
 
-int bndm_eds_aa_run(const unsigned char *pattern, const size_t m, const int loops) {
+int bndm_eds_aa_run(const unsigned char *pattern0,
+                    const unsigned char *pattern1,
+                    const size_t m,
+                    const int loops) {
     struct rusage ruse, ruse1;
     double ssec1, ssec2, usec1, usec2;
     int matches;
 
     if (m==0) {
-        fprintf(stderr, "BNDM-EDS-AA requires AA pattern to be specified as an argument!");
+        fprintf(stderr, "BNDM-EDS-AA requires a pattern!\n");
         return -1;
     }
-    if (m > MAX_AA_PATTERN_LENGTH) {
-        fprintf(stderr, "BNDM-EDS-AA requires AA pattern of maximum length %lu!", MAX_AA_PATTERN_LENGTH);
+    int pattern1_len = 0;
+    if (pattern1) {
+        pattern1_len = strnlen((const char *) pattern1, MAX_PATTERN_LENGTH + 1);
+    }
+    if (!pattern1_len && m > MAX_AA_PATTERN_LENGTH) {
+        fprintf(stderr, "BNDM-EDS-AA requires AA pattern of maximum length %lu!\n", MAX_AA_PATTERN_LENGTH);
+        return -1;
+    }
+    if (pattern1_len && m > MAX_PATTERN_LENGTH) {
+        fprintf(stderr, "BNDM-EDS-AA requires IUPAC pattern of maximum length %lu!\n", MAX_PATTERN_LENGTH);
         return -1;
     }
 
@@ -31,7 +42,11 @@ int bndm_eds_aa_run(const unsigned char *pattern, const size_t m, const int loop
 
     for (int i = 0; i < loops; i++) {
         aPointer = 0;
-        matches = bndm_eds_aa_search(writeBuffer, wbPointer, pattern, m);
+        if (pattern1_len) {
+            matches = bndm_eds_iupac_search(writeBuffer, wbPointer, pattern0, pattern1, m);
+        } else {
+            matches = bndm_eds_aa_search(writeBuffer, wbPointer, pattern0, m);
+        }
     }
 
     getrusage(RUSAGE_SELF, &ruse);
@@ -48,7 +63,7 @@ int bndm_eds_aa_run(const unsigned char *pattern, const size_t m, const int loop
 int bndm_eds_aa_search(const unsigned char *text,
                        const size_t len,
                        const unsigned char *pattern,
-                       const size_t m) {
+                       size_t m) {
     assert(m <= MAX_AA_PATTERN_LENGTH);
 
     DEBUG_PRINT("BNDM-EDS-AA len=%lu, pattern=%.*s, m=%lu\n", len, (int) m, pattern, m);
@@ -58,9 +73,6 @@ int bndm_eds_aa_search(const unsigned char *text,
         fprintf(stderr, "BNDM-EDS-AA failed to generate IUPAC patterns!\n");
         return -1;
     }
-
-    DEBUG_PRINT("  BNDM-EDS-AA IUPAC Pattern 0: %s\n", IUPAC_patterns[0]);
-    DEBUG_PRINT("  BNDM-EDS-AA IUPAC Pattern 1: %s\n", IUPAC_patterns[1]);
 
     return bndm_eds_iupac_search(text, len, IUPAC_patterns[0], IUPAC_patterns[1], m*3);
 }
@@ -73,6 +85,9 @@ int bndm_eds_iupac_search(const unsigned char *text,
     assert(m%3==0);
     assert(m <= MAX_PATTERN_LENGTH);
     assert(strnlen(pattern0, m)==strnlen(pattern1, m));
+
+    DEBUG_PRINT("  BNDM-EDS-AA IUPAC Pattern 0: %.*s\n", (int) m, pattern0);
+    DEBUG_PRINT("                    Pattern 1: %.*s\n", (int) m, pattern1);
 
     int S[2][SIGMA], B[2][SIGMA]; // Preprocessed matching vectors for both patterns, S for ShiftAND, B for BNDM
     // int R[MAX_PATTERN_LENGTH];
@@ -159,7 +174,6 @@ int bndm_eds_iupac_search(const unsigned char *text,
                                 j, curr_symbol, D[1], S[1][curr_symbol], elementStart, m, R1[1]);
                 }
             }
-
             if (elementLength > m) {
                 // Perform BNDM search.
                 int j, last;

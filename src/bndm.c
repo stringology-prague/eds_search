@@ -27,7 +27,7 @@ int bndm_eds_run(const unsigned char *pattern, const size_t m, const int loops)
         if (m == 0){
             randomSelectPattern(rand_pattern, m, readBuffer, fSize);
         }
-        printf("Pattern: %s\n", rand_pattern);
+        printf("Pattern: %.*s\n", (int)m, rand_pattern);
         aPointer = 0;
         matches = bndm_search(rand_pattern, m);
     }

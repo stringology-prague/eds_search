@@ -45,4 +45,22 @@ int bndm_eds_iupac_search(const unsigned char *text,
                           const unsigned char *pattern1,
                           const size_t m);
 
-int bndm_eds_aa_run(const unsigned char *pattern, const size_t m, const int loops);
+/**
+ * Wrapper function that runs either bndm_eds_aa_search(...) or bndm_eds_iupac_search(...). If the <pattern1> is NULL,
+ * then the argument <pattern0> is treated as amino acid string and bndm_eds_aa_search is run.
+ *
+ * Otherwise the patterns are treated as IUPAC and bndm_eds_iupac_search is run. In this case, both patterns must be
+ * of the same length <m>.
+ *
+ * This wrapper performs time measurements and runs the the underlying search function <loops>-times.
+ *
+ * @param pattern0 AA (see bndm_eds_aa_search) or IUPAC pattern (see bndm_eds_iupac_search)
+ * @param pattern1 NULL or IUPAC pattern (see bndm_eds_iupac_search)
+ * @param m length of pattern (for maximum allowed, see bndm_eds_aa_search or bndm_eds_iupac_search)
+ * @param loops number of repeated execution of the underlying search algorithm
+ * @return number of matches (per single run)
+ */
+int bndm_eds_aa_run(const unsigned char *pattern0,
+                    const unsigned char *pattern1,
+                    const size_t m,
+                    const int loops);

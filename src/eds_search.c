@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     } else if (strcasecmp(algorithm, "bndm-mp")==0) {
         bndm_eds_mp_run(patterns[0], pattLen, LOOPS);
     } else if (strcasecmp(algorithm, "bndm-aa")==0) {
-        bndm_eds_aa_run(patterns[0], pattLen, LOOPS);
+        bndm_eds_aa_run(patterns[0], patterns[1], pattLen, LOOPS);
     } else {
         fprintf(stderr, "Invalid algorithm option!\n");
         return EXIT_FAILURE;
