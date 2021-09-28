@@ -5,79 +5,87 @@
 #include <sys/resource.h>
 #include "globals.h"
 
-void byteEncodeInt(unsigned int x)
+unsigned int byteEncodeInt(unsigned char *writeBuffer, unsigned int x)
 {
+	unsigned int pos = 0;
 	//1B codeword
 	if (x < ENC_1B)
 	{
-		writeBuffer[wbPointer++] = (unsigned char)x;
-		return;
+		writeBuffer[pos++] = (unsigned char)x;
+		return pos;
 	}
 
 	//2B codeword
 	if (x < ENC_2B)
 	{
 		x -= ENC_1B;
-		writeBuffer[wbPointer++] = (unsigned char)((x>>8)+DEC_1B);
-		writeBuffer[wbPointer++] = (unsigned char)(x & 0x000000ff);
-		return;
+		writeBuffer[pos++] = (unsigned char)((x>>8)+DEC_1B);
+		writeBuffer[pos++] = (unsigned char)(x & 0x000000ff);
+		return pos;
 	}
 
 	//3B codeword
 	if (x < ENC_3B)
 	{
 		x -= ENC_2B;
-		writeBuffer[wbPointer++] = (unsigned char)((x >> 16) + DEC_2B);
-		writeBuffer[wbPointer++] = (unsigned char)((x >> 8) & 0x000000ff);
-		writeBuffer[wbPointer++] = (unsigned char)(x & 0x000000ff);
-		return;
+		writeBuffer[pos++] = (unsigned char)((x >> 16) + DEC_2B);
+		writeBuffer[pos++] = (unsigned char)((x >> 8) & 0x000000ff);
+		writeBuffer[pos++] = (unsigned char)(x & 0x000000ff);
+		return pos;
 	}
 
 	//4B codeword
 	x -= ENC_3B;
-	writeBuffer[wbPointer++] = (unsigned char)((x >> 24) + DEC_3B);
-	writeBuffer[wbPointer++] = (unsigned char)((x >> 16) & 0x000000ff);
-	writeBuffer[wbPointer++] = (unsigned char)((x >> 8) & 0x000000ff);
-	writeBuffer[wbPointer++] = (unsigned char)(x & 0x000000ff);
+	writeBuffer[pos++] = (unsigned char)((x >> 24) + DEC_3B);
+	writeBuffer[pos++] = (unsigned char)((x >> 16) & 0x000000ff);
+	writeBuffer[pos++] = (unsigned char)((x >> 8) & 0x000000ff);
+	writeBuffer[pos++] = (unsigned char)(x & 0x000000ff);
+	return pos;
 }
 
-unsigned int byteDecodeInt()
+unsigned int byteDecodeInt(const unsigned char *writeBuffer, unsigned int *x_out)
 {
-	unsigned int x;
-	unsigned char c = writeBuffer[aPointer++];
+	unsigned int pos = 0;
+	unsigned char c = writeBuffer[pos++], x;
 
 	if (c < DEC_1B)
-		return (unsigned int)c;
+	{
+		*x_out = c;
+		return pos;
+	}
 
 	if (c < DEC_2B)
 	{
 		x = (unsigned int)(c - DEC_1B);
 		x <<= 8;
-		x |= (unsigned int)writeBuffer[aPointer++];
+		x |= (unsigned int)writeBuffer[pos++];
 		x += ENC_1B;
-		return x;
+		*x_out = x;
+		return pos;
 	}
 
 	if (c < DEC_3B)
 	{
 		x = (unsigned int)(c - DEC_2B);
 		x <<= 8;
-		x |= (unsigned int)writeBuffer[aPointer++];
+		x |= (unsigned int)writeBuffer[pos++];
 		x <<= 8;
-		x |= (unsigned int)writeBuffer[aPointer++];
+		x |= (unsigned int)writeBuffer[pos++];
 		x += ENC_2B;
-		return x;
+		*x_out = x;
+		return pos;
 	}
 
 	x = (unsigned int)(c - DEC_3B);
 	x <<= 8;
-	x |= (unsigned int)writeBuffer[aPointer++];
+	x |= (unsigned int)writeBuffer[pos++];
 	x <<= 8;
-	x |= (unsigned int)writeBuffer[aPointer++];
+	x |= (unsigned int)writeBuffer[pos++];
 	x <<= 8;
-	x |= (unsigned int)writeBuffer[aPointer++];
+	x |= (unsigned int)writeBuffer[pos++];
 	x += ENC_3B;
-	return x;
+	*x_out = x;
+	return pos;
 }
 
 int getFileSize(FILE *f)
@@ -89,17 +97,16 @@ int getFileSize(FILE *f)
 	return size;
 }
 
-void readInputFile(char *fName, unsigned char **readBuffer, int *size)
+unsigned char* readInputFile(char *fName, int *size)
 {
     int unused __attribute__((unused));
 
     FILE *fr = fopen(fName, "r");
     *size = getFileSize(fr);
-    *readBuffer = (unsigned char*)malloc((*size) * sizeof(char));
-    unused = fread(*readBuffer, 1, *size, fr);
+	unsigned char *readBuffer = (unsigned char*)malloc((*size) * sizeof(char));
+    unused = fread(readBuffer, 1, *size, fr);
 	fclose(fr);
-
-	//printf("readInputFile: %c\n",*readBuffer[0]);
+	return readBuffer;
 }
 
 void writeOutputFile(char *fName, unsigned char **outBuffer, int outSize)
@@ -107,16 +114,6 @@ void writeOutputFile(char *fName, unsigned char **outBuffer, int outSize)
 	FILE *fw = fopen(fName, "w");
 	fwrite(*outBuffer, sizeof(char), outSize, fw);
 	fclose(fw);
-}
-
-void printString(unsigned int start, unsigned char length)
-{
-	printf("start = %d, length = %d", start, length);
-	
-	for (unsigned int i = start; i < (start + length); i++)
-		printf("i = %d: %c\n", i, writeBuffer[i]);
-
-	printf("\n");
 }
 
 unsigned int randomSelectPattern(unsigned char* pattern, unsigned int pattLen, unsigned char* file, unsigned int fileSize) {

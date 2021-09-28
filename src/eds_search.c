@@ -14,19 +14,7 @@
 #include "translator.h"
 #include "protein_table.h"
 
-//Globals
-unsigned char *readBuffer;
-unsigned int fSize;
-unsigned int rbPointer;
-
-unsigned char *writeBuffer;
-unsigned int wbPointer;
-unsigned int aPointer;
-
 int main(int argc, char *argv[]) {
-    rbPointer = 0;
-    wbPointer = 0;
-    aPointer = 0;
 
     int LOOPS = atoi(argv[2]);
     size_t pattLen = (unsigned int) atoi(argv[3]), patt2Len = 0;
@@ -47,11 +35,12 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    readInputFile(argv[1], &readBuffer, &fSize);
-    writeBuffer = malloc((fSize + 1000000)*sizeof(unsigned char *));
-    //printf("fSize = %d\n", fSize);
-    translate();
-    writeOutputFile("text/test.out", &writeBuffer, wbPointer);
+    int eds_size, teds_size;
+    unsigned char *eds = readInputFile(argv[1], &eds_size);
+    unsigned char *teds = translate(eds, eds_size, &teds_size);
+    free(eds);
+
+    writeOutputFile("text/test.out", &teds, teds_size);
 
     init_IUPAC_SYMBOLS_TO_BASES();
     init_AA_TO_COMPR_IUPAC_SYMBOLS();
@@ -59,16 +48,18 @@ int main(int argc, char *argv[]) {
     srand(time(NULL));
 
     if (strcasecmp(algorithm, "sa")==0) {
-        SA_run(patterns[0], pattLen, LOOPS);
+        SA_run(teds, teds_size, patterns[0], pattLen, LOOPS);
     } else if (strcasecmp(algorithm, "bndm")==0) {
-        bndm_eds_run(patterns[0], pattLen, LOOPS);
+        bndm_eds_run(teds, teds_size, patterns[0], pattLen, LOOPS);
     } else if (strcasecmp(algorithm, "bndm-mp")==0) {
-        bndm_eds_mp_run(patterns[0], pattLen, LOOPS);
+        bndm_eds_mp_run(teds, teds_size, patterns[0], pattLen, LOOPS);
     } else if (strcasecmp(algorithm, "bndm-aa")==0) {
-        bndm_eds_aa_run(patterns[0], patterns[1], pattLen, LOOPS);
+        bndm_eds_aa_run(teds, teds_size, patterns[0], patterns[1], pattLen, LOOPS);
     } else {
         fprintf(stderr, "Invalid algorithm option!\n");
+        free(teds);
         return EXIT_FAILURE;
     }
+    free(teds);
     return EXIT_SUCCESS;
 }

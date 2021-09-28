@@ -9,7 +9,11 @@
 
 #include "sa.h"
 
-int SA_run(const unsigned char *pattern, const size_t m, const int loops)
+int SA_run(const unsigned char *teds,
+           const size_t len,
+           const unsigned char *pattern,
+           const size_t m,
+           const int loops)
 {
     struct rusage ruse, ruse1, ruse2;
     double ssec1, ssec2, usec1, usec2;
@@ -25,11 +29,10 @@ int SA_run(const unsigned char *pattern, const size_t m, const int loops)
     for (int i = 0; i < loops; i++)
     {
         if (m == 0){
-            randomSelectPattern(rand_pattern, m, readBuffer, fSize);
+            randomSelectPattern(rand_pattern, m, teds, len);
         }
         printf("Pattern: %s\n", rand_pattern);
-        aPointer = 0;
-        matches = SA_search(rand_pattern, m);
+        matches = SA_search(teds, len, rand_pattern, m);
     }
 
     getrusage(RUSAGE_SELF, &ruse);
@@ -43,7 +46,10 @@ int SA_run(const unsigned char *pattern, const size_t m, const int loops)
     return matches;
 }
 
-int SA_search(unsigned char *x, unsigned int m) {
+int SA_search(const unsigned char *teds,
+              const size_t len,
+              unsigned char *x,
+              unsigned int m) {
 	unsigned int S[SIGMA];
 	int i, j, F, D, R1, R2, last, count;
 
@@ -64,17 +70,18 @@ int SA_search(unsigned char *x, unsigned int m) {
 	count = 0;
 	R1 = R2 = 0;
 
-	while (aPointer < wbPointer)
+    int aPointer = 0;
+	while (aPointer < len)
 	{
 		//Processing the beginning of a segment
-		elementNum = (unsigned char)writeBuffer[aPointer++];
+		elementNum = (unsigned char)teds[aPointer++];
 		segmentCounter++;
 		elementCounter += elementNum;
 			
 		//Process one element of the segment.
 		for (unsigned char k = 0; k < elementNum; k++)
 		{
-			elementLength = byteDecodeInt();
+            aPointer += byteDecodeInt(teds + aPointer, &elementLength);
 			elementStart = aPointer;
 			elementEnd = elementStart + elementLength;
 			//printf("bndm_search 1: k = %d, elementNum = %d, elementLength = %d, elementStart = %d, elementEnd = %d\n", k, elementNum, elementLenght, elementStart, elementEnd);
@@ -83,11 +90,11 @@ int SA_search(unsigned char *x, unsigned int m) {
 			j = elementStart;
 			D = R1;
 			while (j < elementEnd) {
-				D = ((D << 1) | 1) & S[writeBuffer[j]];
+				D = ((D << 1) | 1) & S[teds[j]];
 
 
 
-				if (D & F) { count++; printf("SA HIT: j = %d, c = %c, D = %x, S = %x, elementStart = %d, m = %d\n", j, writeBuffer[j], D, S[writeBuffer[j]], elementStart, m); }
+				if (D & F) { count++; printf("SA HIT: j = %d, c = %c, D = %x, S = %x, elementStart = %d, m = %d\n", j, teds[j], D, S[teds[j]], elementStart, m); }
 				j++;
 			}
 			

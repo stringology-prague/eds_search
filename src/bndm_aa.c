@@ -10,7 +10,9 @@
 
 #include "bndm_aa.h"
 
-int bndm_eds_aa_run(const unsigned char *pattern0,
+int bndm_eds_aa_run(const unsigned char *teds,
+                    const size_t len,
+                    const unsigned char *pattern0,
                     const unsigned char *pattern1,
                     size_t m,
                     const int loops) {
@@ -57,8 +59,7 @@ int bndm_eds_aa_run(const unsigned char *pattern0,
     getrusage(RUSAGE_SELF, &ruse1);
 
     for (int i = 0; i < loops; i++) {
-        aPointer = 0;
-        matches = bndm_eds_iupac_search(writeBuffer, wbPointer, IUPAC_patterns[0], IUPAC_patterns[1], m);
+        matches = bndm_eds_iupac_search(teds, len, IUPAC_patterns[0], IUPAC_patterns[1], m);
     }
 
     getrusage(RUSAGE_SELF, &ruse);
@@ -148,6 +149,7 @@ int bndm_eds_iupac_search(const unsigned char *text,
     R10 = R11 = R20 = R21 = D2 = D3 = 0;
     unsigned int matches = 0, segmentCounter = 0, elementCounter = 0;
 
+    int aPointer = 0;
     while (aPointer < len) {
         // Processing the beginning of a segment
         unsigned char segmentSize = (unsigned char) text[aPointer++];
@@ -162,7 +164,8 @@ int bndm_eds_iupac_search(const unsigned char *text,
 
         // Process one element of the segment.
         for (unsigned char k = 0; k < segmentSize; k++) {
-            unsigned int elementLength = byteDecodeInt();
+            unsigned int elementLength;
+            aPointer += byteDecodeInt(text + aPointer, &elementLength);
             unsigned int elementStart = aPointer;
             unsigned int elementEnd = elementStart + elementLength;
             DEBUG_PRINT(

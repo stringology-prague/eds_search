@@ -54,13 +54,17 @@ int bndm_eds_iupac_search(const unsigned char *text,
  *
  * This wrapper performs time measurements and runs the the underlying search function <loops>-times.
  *
+ * @param teds Translated EDS text to search on
+ * @param len Length of <teds>
  * @param pattern0 AA (see bndm_eds_aa_search) or IUPAC pattern (see bndm_eds_iupac_search)
  * @param pattern1 NULL or IUPAC pattern (see bndm_eds_iupac_search)
  * @param m length of pattern (for maximum allowed, see bndm_eds_aa_search or bndm_eds_iupac_search)
  * @param loops number of repeated execution of the underlying search algorithm
  * @return number of matches (per single run)
  */
-int bndm_eds_aa_run(const unsigned char *pattern0,
+int bndm_eds_aa_run(const unsigned char *teds,
+                    const size_t len,
+                    const unsigned char *pattern0,
                     const unsigned char *pattern1,
                     const size_t m,
                     const int loops);

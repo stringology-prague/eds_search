@@ -9,7 +9,9 @@
 
 #include "bndm_eds_mp.h"
 
-int bndm_eds_mp_run(const unsigned char *pattern,
+int bndm_eds_mp_run(const unsigned char *teds,
+                    const size_t len,
+                    const unsigned char *pattern,
                     const size_t m,
                     const int loops) {
     struct rusage ruse, ruse1, ruse2;
@@ -40,8 +42,7 @@ int bndm_eds_mp_run(const unsigned char *pattern,
     getrusage(RUSAGE_SELF, &ruse1);
 
     for (int i = 0; i < loops; i++) {
-        aPointer = 0;
-        matches = bndm_eds_mp_search(IUPAC_patterns[0], IUPAC_patterns[1], m*3);
+        matches = bndm_eds_mp_search(teds, len, IUPAC_patterns[0], IUPAC_patterns[1], m*3);
     }
 
     getrusage(RUSAGE_SELF, &ruse);
@@ -57,7 +58,11 @@ int bndm_eds_mp_run(const unsigned char *pattern,
     return matches;
 }
 
-int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigned int m) {
+int bndm_eds_mp_search(const unsigned char *teds,
+                       const size_t len,
+                       unsigned char *pattern0,
+                       unsigned char *pattern1,
+                       unsigned int m) {
     unsigned int B[2][SIGMA];
     unsigned int S[2][SIGMA];
     //Stores starting register values for change from BNDM to SA. Basically one-set-bit on different positions 0 to m-1.
@@ -106,9 +111,10 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
     R1[0] = R2[0] = D2[0] = 0;
     R1[1] = R2[1] = D2[1] = 0;
 
-    while (aPointer < wbPointer) {
+    int aPointer = 0;
+    while (aPointer < len) {
         //Processing the beginning of a segment
-        elementNum = (unsigned char) writeBuffer[aPointer++];
+        elementNum = (unsigned char) teds[aPointer++];
         segmentCounter++;
         elementCounter += elementNum;
         R1[0] = R2[0];
@@ -118,7 +124,7 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
 
         //Process one element of the segment.
         for (unsigned char k = 0; k < elementNum; k++) {
-            elementLength = byteDecodeInt();
+            aPointer += byteDecodeInt(teds + aPointer, &elementLength);
             elementStart = aPointer;
             elementEnd = elementStart + elementLength;
             DEBUG_PRINT("  ELEMENT segment = %d, element = %d/%d, start = %d, end = %d, len = %d, elementCounter = %d\n",
@@ -129,7 +135,7 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
             D[0] = R1[0];
             D[1] = R1[1];
             while (j < (elementStart + m) && j < elementEnd) {
-                char curr_symbol = writeBuffer[j];
+                char curr_symbol = teds[j];
                 D[0] = ((D[0] << 1) | 1) & S[0][curr_symbol];
                 D[1] = ((D[1] << 1) | 1) & S[1][curr_symbol];
                 DEBUG_PRINT("    SA1 j=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, curr_symbol, D[0], D[1]);
@@ -176,7 +182,7 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
                 D[1] = ~0;
                 DEBUG_PRINT("    BNDM j=%d, i=%d\n", j, i);
                 while (i >= 0 && (D[0]!=0 || D[1]!=0)) {
-                    char curr_symbol = writeBuffer[j + i];
+                    char curr_symbol = teds[j + i];
                     D[0] &= B[0][curr_symbol];
                     D[1] &= B[1][curr_symbol];
                     DEBUG_PRINT("      BNDM j=%d, i=%d, j+i=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n",
@@ -234,7 +240,7 @@ int bndm_eds_mp_search(unsigned char *pattern0, unsigned char *pattern1, unsigne
             D[0] = D2[0]; //Setting the initial value to SA register.
             D[1] = D2[1]; //Setting the initial value to SA register.
             while (j < elementEnd) {
-                char curr_symbol = writeBuffer[j];
+                char curr_symbol = teds[j];
                 D[0] = ((D[0] << 1) | 1) & S[0][curr_symbol];
                 D[1] = ((D[1] << 1) | 1) & S[1][curr_symbol];
                 DEBUG_PRINT("    SA2 j=%d, curr_symbol=%c, D[0]=0x%x, D[1]=0x%x\n", j, curr_symbol, D[1], D[2]);

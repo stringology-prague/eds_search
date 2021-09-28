@@ -14,15 +14,6 @@
 #define DEC_2B 230
 #define DEC_3B 250
 
-//Globals
-extern unsigned char *readBuffer;
-extern unsigned int fSize;
-extern unsigned int rbPointer;
-
-extern unsigned char *writeBuffer;
-extern unsigned int wbPointer;
-extern unsigned int aPointer;
-
 #ifdef DEBUG
 #define DEBUG_PRINT(...) do{ fprintf( stderr, __VA_ARGS__ ); } while( 0 )
 #else
