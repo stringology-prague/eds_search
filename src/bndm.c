@@ -77,7 +77,7 @@ int bndm_search(const unsigned char *teds,
 	
 	/* Searching */
 
-	unsigned char elementNum;
+	unsigned int elementNum;
 	unsigned int elementLength;
 	unsigned int elementStart, elementEnd;
 	unsigned int segmentCounter = 0;
@@ -90,13 +90,13 @@ int bndm_search(const unsigned char *teds,
 	while (aPointer < len)
 	{
 		//Processing the beginning of a segment
-		elementNum = (unsigned char)teds[aPointer++];
+        aPointer += byteDecodeInt(teds + aPointer, &elementNum);
 		segmentCounter++;
 		elementCounter += elementNum;
 		R1 = R2; R2 = 0;
 
 		//Process one element of the segment.
-		for (unsigned char k = 0; k < elementNum; k++)
+		for (unsigned int k = 0; k < elementNum; k++)
 		{
 			//elementLenght = (unsigned char)teds[aPointer++]; elementLenght <<= 8;
 			//elementLenght |= (unsigned char)teds[aPointer++];

@@ -152,7 +152,8 @@ int bndm_eds_iupac_search(const unsigned char *text,
     int aPointer = 0;
     while (aPointer < len) {
         // Processing the beginning of a segment
-        unsigned char segmentSize = (unsigned char) text[aPointer++];
+        unsigned int segmentSize;
+        aPointer += byteDecodeInt(text + aPointer, &segmentSize);
         segmentCounter++;
         elementCounter += segmentSize;
         R10 = R20;
@@ -163,7 +164,7 @@ int bndm_eds_iupac_search(const unsigned char *text,
                     segmentCounter, segmentSize, elementCounter, aPointer);
 
         // Process one element of the segment.
-        for (unsigned char k = 0; k < segmentSize; k++) {
+        for (unsigned int k = 0; k < segmentSize; k++) {
             unsigned int elementLength;
             aPointer += byteDecodeInt(text + aPointer, &elementLength);
             unsigned int elementStart = aPointer;

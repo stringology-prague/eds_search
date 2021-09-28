@@ -61,7 +61,7 @@ int SA_search(const unsigned char *teds,
 	F = 1; F <<= m - 1;
 	/* Searching */
 
-	unsigned char elementNum;
+	unsigned int elementNum;
 	unsigned int elementLength;
 	unsigned int elementStart, elementEnd;
 	unsigned int segmentCounter = 0;
@@ -74,12 +74,12 @@ int SA_search(const unsigned char *teds,
 	while (aPointer < len)
 	{
 		//Processing the beginning of a segment
-		elementNum = (unsigned char)teds[aPointer++];
+        aPointer += byteDecodeInt(teds + aPointer, &elementNum);
 		segmentCounter++;
 		elementCounter += elementNum;
 			
 		//Process one element of the segment.
-		for (unsigned char k = 0; k < elementNum; k++)
+		for (unsigned int k = 0; k < elementNum; k++)
 		{
             aPointer += byteDecodeInt(teds + aPointer, &elementLength);
 			elementStart = aPointer;

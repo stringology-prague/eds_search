@@ -45,8 +45,8 @@ unsigned int byteEncodeInt(unsigned char *writeBuffer, unsigned int x)
 
 unsigned int byteDecodeInt(const unsigned char *writeBuffer, unsigned int *x_out)
 {
-	unsigned int pos = 0;
-	unsigned char c = writeBuffer[pos++], x;
+	unsigned int pos = 0, x;
+	unsigned char c = writeBuffer[pos++];
 
 	if (c < DEC_1B)
 	{
