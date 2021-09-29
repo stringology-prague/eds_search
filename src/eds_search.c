@@ -22,11 +22,11 @@ int main(int argc, char *argv[]) {
     unsigned char patterns[MAX_DNA_PATTERNS][MAX_PATTERN_LENGTH + 1];
     memset(patterns, 0, MAX_DNA_PATTERNS*(MAX_PATTERN_LENGTH + 1));
 
-    if (argc >= 6) {
+    if (argc >= 6 && *argv[5]) {
         pattLen = strnlen(argv[5], MAX_PATTERN_LENGTH + 1);
         memcpy(patterns[0], argv[5], pattLen);
     }
-    if (argc >= 7) {
+    if (argc >= 7 && *argv[6]) {
         patt2Len = strnlen(argv[6], MAX_PATTERN_LENGTH + 1);
         strncpy(patterns[1], argv[6], pattLen);
     }
