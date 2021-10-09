@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     unsigned char *teds = translate(eds, eds_size, &teds_size);
     free(eds);
 
-    writeOutputFile("text/test.out", &teds, teds_size);
+//    writeOutputFile("/tmp/eds_search.teds", &teds, teds_size);
 
     init_IUPAC_SYMBOLS_TO_BASES();
     init_AA_TO_COMPR_IUPAC_SYMBOLS();
